@@ -129,7 +129,7 @@ pub struct RegisterSystem <'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(comp: SerializedComponent)]
+#[instruction(components: Vec<SerializedComponent>)]
 pub struct AddComponent<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -149,7 +149,7 @@ pub struct AddComponent<'info>{
     // System is allowed to modify the component it's adding
     // System is a signer
     #[account(
-        constraint = system_registration.component.key() == comp.component_key.key() && system_registration.system.key() == system.key()
+        constraint = check_components_can_be_modified_by_system(components, system_registration.system) && system_registration.system.key() == system.key()
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -210,4 +210,14 @@ pub struct ModifyComponent<'info>{
     pub system_registration: Account<'info, SystemRegistration>,
 
     pub universe: Program<'info, Ecs>, 
+}
+
+/*************************************************UTIL Functions */
+pub fn check_components_can_be_modified_by_system(components: Vec<SerializedComponent>, system_registration: Pubkey) -> bool {
+    for comp in components {
+        if comp.component_key.key() != system_registration.key(){
+            return false;
+        }
+    }
+    return true;
 }

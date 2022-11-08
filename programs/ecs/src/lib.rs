@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("F3xobt75aXdrk3oRiK3JpPepZAswNmeid8rkLtZTkrqK");
 
 pub mod account;
 pub mod context;
@@ -47,12 +47,12 @@ pub mod ecs {
         Ok(())
     }
 
-    pub fn add_component(ctx:Context<AddComponent>, comp:SerializedComponent) -> Result<()> {
-        ctx.accounts.entity.components.push(comp.clone());
+    pub fn add_component(ctx:Context<AddComponent>, components:Vec<SerializedComponent>) -> Result<()> {
+        ctx.accounts.entity.components.append(components.clone().as_mut());
         
         emit!(NewComponentAdded{
             entity: ctx.accounts.entity.key(),
-            component: comp
+            components: components
         });
         Ok(())
     }

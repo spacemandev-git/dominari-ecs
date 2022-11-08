@@ -58,7 +58,7 @@ pub struct MintEntity<'info>{
 }
 
 #[derive(Accounts)]
-#[instruction(comp:SerializedComponent)]
+#[instruction(components:Vec<SerializedComponent>)]
 pub struct AddComponent<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -66,7 +66,7 @@ pub struct AddComponent<'info> {
 
     #[account(
         mut,
-        realloc = entity.to_account_info().data_len() + comp.max_size,
+        realloc = entity.to_account_info().data_len() + compute_comp_arr_max_size(&components),
         realloc::payer = payer,
         realloc::zero = false,
     )]
@@ -126,3 +126,11 @@ pub struct ModifyComponent<'info> {
     pub world_signer: Signer<'info>
 }
 
+/************************************************ Utility Functions */
+pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize {
+    let mut max_size:usize = 0;
+    for comp in components {
+        max_size += comp.max_size;
+    }
+    return max_size;
+}

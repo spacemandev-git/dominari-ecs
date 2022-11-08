@@ -536,6 +536,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dominarisystems"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "dominariworld",
+ "ecs",
+]
+
+[[package]]
 name = "dominariworld"
 version = "0.1.0"
 dependencies = [

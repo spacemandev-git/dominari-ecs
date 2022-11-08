@@ -4,7 +4,7 @@ use ecs::{
     state::SerializedComponent
 };
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("GGNoo8tn1vbLnMwU9Hz4oFmNXQd2gVpXCG9m3ZT7LK1J");
 
 pub mod account;
 pub mod context;
@@ -102,7 +102,7 @@ pub mod dominariworld {
         Ok(())
     }
 
-    pub fn add_component(ctx:Context<AddComponent>, comp: SerializedComponent) -> Result<()> {
+    pub fn add_component(ctx:Context<AddComponent>, components: Vec<SerializedComponent>) -> Result<()> {
         let accounts = ecs::cpi::accounts::AddComponent {
             payer: ctx.accounts.payer.to_account_info(),
             system_program: ctx.accounts.system_program.to_account_info(),
@@ -119,7 +119,7 @@ pub mod dominariworld {
             ctx.accounts.universe.to_account_info(),
             accounts,
             signer_seeds
-        ), comp)?;
+        ), components)?;
 
         //No need to emit an event, as Universe will do so
         Ok(())

@@ -19,7 +19,7 @@ pub struct NewEntityMinted{
 #[event]
 pub struct NewComponentAdded{
     pub entity: Pubkey,
-    pub component: SerializedComponent
+    pub components: Vec<SerializedComponent>
 }
 
 #[event]

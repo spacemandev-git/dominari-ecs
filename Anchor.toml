@@ -2,8 +2,9 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-ecs = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
-dominariworld = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+ecs = "F3xobt75aXdrk3oRiK3JpPepZAswNmeid8rkLtZTkrqK"
+dominariworld = "GGNoo8tn1vbLnMwU9Hz4oFmNXQd2gVpXCG9m3ZT7LK1J"
+dominarisystems = "Gp1okeWiTe7PK58aiEdMWgQQp5DCYAkh223dARExNf1Y"
 
 [registry]
 url = "https://api.apr.dev"
