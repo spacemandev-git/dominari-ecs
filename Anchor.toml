@@ -3,6 +3,7 @@ seeds = false
 skip-lint = false
 [programs.localnet]
 ecs = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+dominariworld = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 
 [registry]
 url = "https://api.apr.dev"

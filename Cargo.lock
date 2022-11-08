@@ -540,6 +540,7 @@ name = "dominariworld"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "ecs",
 ]
 
 [[package]]

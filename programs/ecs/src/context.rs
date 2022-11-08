@@ -22,7 +22,17 @@ pub struct RegisterWorldInstance <'info> {
         ],
         bump,
     )]
-    pub world_instance: Account<'info, WorldInstance>
+    pub world_instance: Account<'info, WorldInstance>,
+
+    // Only the world can register new instances of itself. It's left to the world how to implement this.
+    #[account(
+        seeds = [
+            b"world_signer",
+        ],
+        bump,
+        seeds::program = world.key()
+    )]
+    pub world_signer: Signer<'info>
 }
 
 #[derive(Accounts)]
@@ -102,10 +112,6 @@ pub struct RemoveComponent<'info> {
 #[derive(Accounts)]
 #[instruction(idx:usize)]
 pub struct ModifyComponent<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub system_program: Program<'info, System>,
-
     #[account(mut)]
     pub entity: Account<'info, Entity>,
 

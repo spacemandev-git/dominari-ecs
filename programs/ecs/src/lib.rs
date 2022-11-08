@@ -2,12 +2,12 @@ use anchor_lang::prelude::*;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
-mod account;
-mod context;
-mod constant;
-mod error;
-mod event;
-mod state;
+pub mod account;
+pub mod context;
+pub mod constant;
+pub mod error;
+pub mod event;
+pub mod state;
 
 //use account::*;
 use context::*;
