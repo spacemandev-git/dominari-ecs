@@ -46,7 +46,7 @@ pub struct MintEntity<'info>{
     #[account(
         init,
         payer=payer,
-        space=8+32+32+8, //It is expected this will get Realloc'd every time a component is added
+        space=8+32+32+32+8, //It is expected this will get Realloc'd every time a component is added
         seeds = [
             b"Entity",
             mint.key().as_ref(),
@@ -110,7 +110,7 @@ pub struct RemoveComponent<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(idx:usize)]
+#[instruction(idx: Vec<usize>, data: Vec<Vec<u8>>)]
 pub struct ModifyComponent<'info> {
     #[account(mut)]
     pub entity: Account<'info, Entity>,

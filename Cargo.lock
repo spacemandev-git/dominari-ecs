@@ -536,6 +536,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dominari"
+version = "0.1.0"
+
+[[package]]
 name = "dominarisystems"
 version = "0.1.0"
 dependencies = [

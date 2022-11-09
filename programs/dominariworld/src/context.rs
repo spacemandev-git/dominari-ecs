@@ -130,7 +130,7 @@ pub struct RegisterSystem <'info> {
 
 #[derive(Accounts)]
 #[instruction(components: Vec<SerializedComponent>)]
-pub struct AddComponent<'info>{
+pub struct AddComponents<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -213,6 +213,7 @@ pub struct ModifyComponent<'info>{
 }
 
 /*************************************************UTIL Functions */
+
 pub fn check_components_can_be_modified_by_system(components: Vec<SerializedComponent>, system_registration: Pubkey) -> bool {
     for comp in components {
         if comp.component_key.key() != system_registration.key(){

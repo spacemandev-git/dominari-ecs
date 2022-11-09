@@ -12,7 +12,7 @@ pub mod state;
 //use account::*;
 use context::*;
 //use constant::*;
-use error::*;
+//use error::*;
 use event::*;
 use state::*;
 
@@ -47,7 +47,7 @@ pub mod ecs {
         Ok(())
     }
 
-    pub fn add_component(ctx:Context<AddComponent>, components:Vec<SerializedComponent>) -> Result<()> {
+    pub fn add_components(ctx:Context<AddComponent>, components:Vec<SerializedComponent>) -> Result<()> {
         ctx.accounts.entity.components.append(components.clone().as_mut());
         
         emit!(NewComponentAdded{
@@ -57,6 +57,10 @@ pub mod ecs {
         Ok(())
     }
 
+    /**
+     * Can only remove one component at a time as it changes IDX
+     * Possibly could do multiple remove if you scan by pubkey instead of idx
+     */
     pub fn remove_component(ctx:Context<RemoveComponent>, idx: usize) -> Result<()> {
         let removed_comp = ctx.accounts.entity.components.remove(idx);
         
@@ -68,16 +72,15 @@ pub mod ecs {
         Ok(())
     }
 
-    pub fn modify_component(ctx:Context<ModifyComponent>, idx: usize, data:Vec<u8>) -> Result<()> {        
-        if ctx.accounts.entity.components.get(idx).unwrap().max_size < data.len() {
-            return err!(ComponentError::InvalidDataLengthError)
+    pub fn modify_components(ctx:Context<ModifyComponent>, idx: Vec<usize>, data:Vec<Vec<u8>>) -> Result<()> {
+        
+        for i in idx.clone() {
+            ctx.accounts.entity.components.get_mut(i).unwrap().data = data.get(i).unwrap().clone();
         }
-
-        ctx.accounts.entity.components.get_mut(idx).unwrap().data = data;
-
+        
         emit!(ComponentModified {
             entity: ctx.accounts.entity.key(),
-            component: ctx.accounts.entity.components.get(idx).unwrap().clone()
+            components: idx
         });
 
         Ok(())

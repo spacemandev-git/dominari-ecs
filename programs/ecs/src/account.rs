@@ -12,8 +12,9 @@ pub struct WorldInstance {
 
 #[account]
 pub struct Entity {
+    pub authority: Pubkey,
     pub world: Pubkey, // Acts as the Update Authority
-    pub instance: u64,
     pub mint: Pubkey, //Ties the Entity to a Token Mint
+    pub instance: u64,
     pub components: Vec<SerializedComponent>
 }

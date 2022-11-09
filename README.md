@@ -29,7 +29,6 @@
 | Tile        |     x      |            |    x     |    x    |   x   |    x     |              |           | 
 | Feature     |     x      |            |    x     |         |   x   |          |              |     x     | 
 | Unit        |     x      |            |          |         |   x   |          |              |     x     | 
-| Card        |     x      |            |          |         |   x   |          |              |           | 
 | Player      |     x      |            |          |         |       |          |       x      |           | 
 
 
@@ -44,6 +43,7 @@ Card Components: Card Stats (Blueprint)
         -> Deploy Dominari World, register with Universe
         -> Register Components to Dominari World
         -> Deploy Dominari Systems
+        -> Register DominariSystems for Each of the Registered Components
 
     -> Setup Map
         -> Instance a map of a given grid size
@@ -55,6 +55,7 @@ Card Components: Card Stats (Blueprint)
 
     -> Setup Features, Units, Mods
         -> Register Blueprints as Accounts on DominariSystems for each Feature, Unit, Mod
+        -> Register Blueprint for Starting Card
 
     -> Register Player
         -> Create Player Entity
@@ -67,10 +68,26 @@ Card Components: Card Stats (Blueprint)
         -> Two players spawn units and use features while attempting to kill other player off
 
 ## Systems
+    -> RegisterBlueprint()
+        -> Blueprint is a Collection of Preset Components
     -> RegisterPlayer()
     -> InitMap()
     -> InitTile()
     -> BuyTile()
     -> BuildFeature()
-    -> RegisterFeatureBlueprint()
-    -> RegisterCardBlueprint()
+    -> SwitchPhases()
+    -> MoveUnit()
+    -> UseFeature() *** (Will be quite a few systems)
+    -> PlayCard()
+    -> AttackUnit()
+
+## SDK: JS or Rust?
+    -> How to get all entities owned by an address?
+    -> How to get all Tiles that belong to a Map?
+    -> How to get all Features on a Map? 
+    -> 
+
+### Key Considerations
+    -> Entity Owners for a Game *must* be a PDA so it can modify/fetch them them!!
+        -> Game Entities are Maps, Tiles, Blueprints
+        -> 
