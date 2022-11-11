@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "programs/*",
-    "sdk/dominari"
+    "sdk/dominari",
+    "client-rs"
 ]
 
 [profile.release]

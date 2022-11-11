@@ -6,3 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anchor-client = "0.25.0"
+ecs = { path = "../../programs/ecs", features = ["no-entrypoint"]}
+dominariworld = { path = "../../programs/dominariworld", features = ["no-entrypoint"]} 
+dominarisystems = { path = "../../programs/dominarisystems", features = ["no-entrypoint"]}
