@@ -1,3 +1,12 @@
+/*
+    -> Deploy & Register
+        - Deploy Universe, World, Systems
+        -> Initalize World with Universe
+        -> Register Components to Dominari World
+        -> Instance a World
+        -> Register DominariSystems for Each of the Registered Components
+*/
+
 use anchor_client::{solana_sdk::{signer::Signer, transaction::Transaction}};
 use dominari::{world::{ComponentSchema}};
 
@@ -15,7 +24,7 @@ pub fn init_world(client: &Client) {
 }
 
 pub fn init_components(client: &Client) {
-    println!("Current components registered: {:#}", client.world.get_world_config().components);
+    println!("Current components registered: {:#}", client.world.get_world_config().1.components);
     for schema in ComponentSchema::get_schemas() {
         println!("Registering Component: {}", schema.url);
         let mut comp_tx = Transaction::new_with_payer(
@@ -25,11 +34,11 @@ pub fn init_components(client: &Client) {
         comp_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().unwrap());
         client.rpc.send_and_confirm_transaction(&comp_tx).unwrap();
     }
-    println!("Components after registration loop: {:#}", client.world.get_world_config().components);
+    println!("Components after registration loop: {:#}", client.world.get_world_config().1.components);
 }
 
 pub fn instance_world(client: &Client) -> u64 {
-    println!("Current Instances: {:#}", client.world.get_world_config().instances);
+    println!("Current Instances: {:#}", client.world.get_world_config().1.instances);
     println!("Registering new instance...");
     let mut new_instance_tx = Transaction::new_with_payer(
         client.world.instance_world(client.id01.pubkey()).unwrap().as_slice(),
@@ -37,8 +46,8 @@ pub fn instance_world(client: &Client) -> u64 {
     );
     new_instance_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().unwrap());
     client.rpc.send_and_confirm_transaction(&new_instance_tx).unwrap();
-    let instance = client.world.get_world_config().instances;
-    println!("Instances after registration: {:#}", instance);
+    let instance = client.world.get_world_config().1.instances;
+    println!("Instance registered: {:#}", instance);
     return instance;
 }
 

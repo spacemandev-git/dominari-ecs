@@ -1,9 +1,13 @@
 use anchor_client::{solana_sdk::{signature::{Keypair, read_keypair_file}}};
 use anchor_client::solana_client::rpc_client::RpcClient;
 use dominari::{universe::Universe, world::{World}, dominari::Dominari};
+use std::env;
 
 mod register;
 use register::*;
+
+mod map;
+use map::*;
 
 const RPC_URL:&str = "http://64.227.14.242:8899";
 
@@ -24,8 +28,25 @@ fn main() {
         dominari: Dominari::new(RPC_URL, RPC_URL.replace("http", "wss").as_str(), None),
     };
 
-    /* Deploy & Register */
-    register(&client);
+    let args: Vec<String> = env::args().collect();
+    println!("Args: {:?}", args);
+
+    match args.get(1).unwrap().as_str() {
+        "register" => {
+            println!("Initializing Programs...");
+            register(&client);
+        },
+        "map" => {
+            let instance:u64 = args.get(2).unwrap().parse().unwrap();
+            let max_x:usize = args.get(3).unwrap().parse().unwrap();
+            let max_y:usize = args.get(4).unwrap().parse().unwrap();
+            println!("Generating Map of size ({:#},{:#}) for instance {:#}", max_x, max_y, instance);
+
+        }
+        &_ => {
+            println!("Command ({}) Not Supported!", args.get(1).unwrap());
+        }
+    }
 
 }
 
@@ -48,20 +69,7 @@ pub fn register(client: &Client) {
 
 /*
 ## Scripts
-    -> Deploy & Register
-        - Deploy Universe, World, Systems
-        -> Initalize World with Universe
-        -> Register Components to Dominari World
-        -> Instance a World
-        -> Register DominariSystems for Each of the Registered Components
 
-    -> Setup Map
-        -> Instance a map of a given grid size
-            -> Create Empty Map Entity
-            -> Initalize Map Entity & Add Compnoents
-        -> Initalize X*Y Tiles
-            -> Create Empty Tile Entity
-            -> Initialize Tile(x,y) Entity & Add Components
 
     -> Setup Features, Units, Mods
         -> Register Blueprints as Accounts on DominariSystems for each Feature, Unit, Mod

@@ -73,7 +73,7 @@ impl World {
             b"world_signer".as_ref(),
         ], &self.program.id()).0;
 
-        let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config();
+        let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config().1;
 
         let world_instance = Pubkey::find_program_address(&[
             b"World".as_ref(),
@@ -100,16 +100,29 @@ impl World {
                 .instructions()
     } 
 
-    pub fn get_world_config(&self) -> dominariworld::account::WorldConfig {
+    pub fn get_world_config(&self) -> (Pubkey, dominariworld::account::WorldConfig) {
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &self.program.id()).0;
         let world_config_acc:dominariworld::account::WorldConfig = self.program.account(world_config).unwrap();
-        return world_config_acc;
+        return (world_config, world_config_acc);
+    }
+
+    pub fn get_world_instance(&self, instance:u64) -> (Pubkey, ecs::account::WorldInstance) {
+        let world_config = self.get_world_config().1;
+        
+        let world_instance = Pubkey::find_program_address(&[
+            b"World",
+            &self.program.id().as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &world_config.universe);
+        
+        let account: ecs::account::WorldInstance = self.program.account(world_instance.0).unwrap();
+        return (world_instance.0, account);
     }
 
     pub fn register_system(&self, system:Pubkey, instance:u64, payer:Pubkey) -> Result<Vec<Instruction>, anchor_client::ClientError> {
-        let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config();
+        let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config().1;
 
         let world_instance = Pubkey::find_program_address(&[
             b"World".as_ref(),
@@ -143,7 +156,7 @@ impl World {
     }
 
     pub fn add_components_to_system_registration(&self, schemas:Vec<ComponentSchema>, system:Pubkey, instance:u64, payer:Pubkey) -> Result<Vec<Instruction>, anchor_client::ClientError> {
-        let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config();
+        let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config().1;
 
         let world_instance = Pubkey::find_program_address(&[
             b"World".as_ref(),

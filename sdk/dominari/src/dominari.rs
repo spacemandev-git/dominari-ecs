@@ -32,7 +32,7 @@ impl Dominari {
     pub fn initalize_map(&self, payer: Pubkey, instance:u64, max_x: u8, max_y:u8) -> Result<Vec<Instruction>, anchor_client::ClientError> {
         let system_signer = Pubkey::find_program_address(&[
             b"System_Signer",
-        ], &self.program.id());
+        ], &self.program.id()).0;
 
         
         self.program
@@ -50,6 +50,6 @@ impl Dominari {
                 .instructions()
        
     }
-    */
     
+    */
 }
