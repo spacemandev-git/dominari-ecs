@@ -102,15 +102,23 @@ pub struct SystemInitMap<'info> {
     pub world_config: Account<'info, WorldConfig>,
     pub world_program: Program<'info, Dominariworld>,
     pub universe: Program<'info, Ecs>, 
-    #[account(
-        constraint = world_instance.world.key() == map_entity.world.key() && world_instance.instance == map_entity.instance
-    )]
+
     pub world_instance: Account<'info, WorldInstance>,    
-    #[account(
-        mut,
-        constraint = map_entity.authority.key() == payer.key()
-    )]
-    pub map_entity: Account<'info, Entity>,
+
+    /// CHECK: Initalized through CPI
+    #[account(mut)]
+    pub map_entity: AccountInfo<'info>,
+
+    /// CHECK: Initialized through CPI
+    #[account(mut)]
+    pub map_mint: AccountInfo<'info>,
+    
+    /// CHECK: Initialized through CPI
+    #[account(mut)]
+    pub map_mint_ata: AccountInfo<'info>,
+
+    /// CHECK: Entity.rs will Check it
+    pub spl_token_program: AccountInfo<'info>
 }
 
 #[derive(Accounts)]

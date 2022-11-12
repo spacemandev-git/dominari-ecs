@@ -31,5 +31,5 @@ pub struct ComponentRemoved{
 #[event]
 pub struct ComponentModified{
     pub entity: Pubkey,
-    pub components: Vec<usize>
+    pub component: Pubkey
 }

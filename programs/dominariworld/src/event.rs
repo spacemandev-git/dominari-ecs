@@ -15,7 +15,6 @@ pub struct NewComponentRegistered {
 #[event]
 pub struct NewSystemRegistration {
     pub world_instance: Pubkey,
-    pub component: Pubkey,
     pub system: Pubkey,
     pub system_registration: Pubkey
 }

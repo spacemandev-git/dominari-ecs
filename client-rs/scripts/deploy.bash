@@ -4,13 +4,13 @@ cd ../
 anchor build
 
 # Deploy Universe
-solana program deploy target/deploy/ecs.so
+solana program deploy --program-id keypairs/ecs-keypair.json target/deploy/ecs.so
 
 # Deploy Dominari World
-solana program deploy target/deploy/dominariworld.so
+solana program deploy --program-id keypairs/dominariworld-keypair.json target/deploy/dominariworld.so
 
 # Deploy Dominari System
-solana program deploy target/deploy/dominarisystems.so
+solana program deploy --program-id keypairs/dominarisystems-keypair.json target/deploy/dominarisystems.so
 
 
 

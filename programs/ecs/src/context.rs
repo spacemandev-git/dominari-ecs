@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
+use anchor_spl::token::ID as SPLID;
 
 use crate::account::*;
 use crate::state::*;
@@ -42,7 +42,8 @@ pub struct MintEntity<'info>{
     pub system_program: Program<'info, System>,
 
     pub world_instance: Account<'info, WorldInstance>,
-    pub mint: Account<'info,Mint>,
+    /// CHECK: Passed in as AI because it'll be initalized through CPI
+    pub mint: AccountInfo<'info>,
     #[account(
         init,
         payer=payer,
@@ -54,7 +55,18 @@ pub struct MintEntity<'info>{
         ],
         bump,
     )]
-    pub entity: Account<'info, Entity>
+    pub entity: Account<'info, Entity>,
+    /// CHECK: This account will be marked owner & mint authority on the SPL Token
+    pub entity_owner: Signer<'info>,
+    /// CHECK: AI because it'll be an ATA that's created via CPI
+    #[account(mut)]
+    pub mint_ata: AccountInfo<'info>,
+
+    /// CHECK: Checks to make sure it's the right SPL Token Program
+    #[account(
+        constraint = spl_token_program.key() == SPLID
+    )]
+    pub spl_token_program: AccountInfo<'info>
 }
 
 #[derive(Accounts)]
@@ -84,7 +96,7 @@ pub struct AddComponent<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(idx:usize)]
+#[instruction(removed_components: Vec<Pubkey>)]
 pub struct RemoveComponent<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -92,7 +104,7 @@ pub struct RemoveComponent<'info> {
 
     #[account(
         mut,
-        realloc = entity.to_account_info().data_len() - entity.components.get(idx).unwrap().max_size,
+        realloc = entity.to_account_info().data_len() - get_removed_size(&entity.components, &removed_components),
         realloc::payer = payer,
         realloc::zero = false,
     )]
@@ -110,7 +122,7 @@ pub struct RemoveComponent<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(idx: Vec<usize>, data: Vec<Vec<u8>>)]
+#[instruction(components: Vec<Pubkey>, data: Vec<Vec<u8>>)]
 pub struct ModifyComponent<'info> {
     #[account(mut)]
     pub entity: Account<'info, Entity>,
@@ -133,4 +145,14 @@ pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize
         max_size += comp.max_size;
     }
     return max_size;
+}
+
+pub fn get_removed_size(components: &Vec<SerializedComponent>, removed_components: &Vec<Pubkey>) -> usize {
+    let mut removed_size:usize = 0;
+    for comp in components.iter() {
+        if removed_components.contains(&comp.component_key) {
+            removed_size += comp.max_size;
+        }
+    }
+    return removed_size;
 }

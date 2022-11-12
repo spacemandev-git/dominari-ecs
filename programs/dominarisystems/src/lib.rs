@@ -18,10 +18,13 @@ use state::*;
 
 use ecs::state::SerializedComponent;
 
-declare_id!("Gp1okeWiTe7PK58aiEdMWgQQp5DCYAkh223dARExNf1Y");
+declare_id!("3YdayPtujByJ1g1DWEUh7vpg78gZL49FWyD5rDGyof9T");
 
 #[program]
 pub mod dominarisystems {
+    use anchor_lang::solana_program::borsh::try_from_slice_unchecked;
+    use ecs::account::Entity;
+
     use super::*;
 
     /**
@@ -97,11 +100,35 @@ pub mod dominarisystems {
     }
 
     pub fn system_initalize_map(ctx:Context<SystemInitMap>, max_x: u8, max_y: u8) -> Result<()> {
+        let system_signer_seeds:&[&[u8]] = &[
+            b"System_Signer",
+            &[*ctx.bumps.get("system_signer").unwrap()]
+        ];
+        let signer_seeds = &[system_signer_seeds];
+
+        // Mint Map Entity
+        ecs::cpi::mint_entity(CpiContext::new_with_signer(
+            ctx.accounts.universe.to_account_info(),
+            ecs::cpi::accounts::MintEntity{
+                entity: ctx.accounts.map_entity.to_account_info(),
+                entity_owner: ctx.accounts.system_signer.to_account_info(),
+                mint: ctx.accounts.map_mint.to_account_info(),
+                mint_ata: ctx.accounts.map_mint_ata.to_account_info(),
+                payer: ctx.accounts.payer.to_account_info(),
+                spl_token_program: ctx.accounts.spl_token_program.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                world_instance: ctx.accounts.world_instance.to_account_info(),
+            },
+            signer_seeds
+        ))?;
+
+
         let mut components: Vec<SerializedComponent> = vec![];
+        let map_entity:Entity = try_from_slice_unchecked(&ctx.accounts.map_entity.data.borrow_mut())?; 
 
         // Map has Metadata and MapMeta Components
         let metadata_component = ComponentMetadata {
-            name: format!("Map ({:#})", ctx.accounts.map_entity.instance),
+            name: format!("Map ({:#})", map_entity.instance),
             entity_type: "Map".to_string(),
             world_instance: ctx.accounts.world_instance.key(),
         }.try_to_vec().unwrap();
@@ -134,11 +161,7 @@ pub mod dominarisystems {
             system_registration: ctx.accounts.system_registration.to_account_info(),
             universe: ctx.accounts.universe.to_account_info()
         };
-        let system_signer_seeds:&[&[u8]] = &[
-            b"System_Signer",
-            &[*ctx.bumps.get("system_signer").unwrap()]
-        ];
-        let signer_seeds = &[system_signer_seeds];
+
 
         dominariworld::cpi::req_add_component(CpiContext::new_with_signer(
             ctx.accounts.world_program.to_account_info(), 

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use ecs::state::SerializedComponent;
 
-declare_id!("GGNoo8tn1vbLnMwU9Hz4oFmNXQd2gVpXCG9m3ZT7LK1J");
+declare_id!("H5mieGWWK6qukHoNzbR6ysLxReeQC4JHZcNM6JkPQnm3");
 
 pub mod account;
 pub mod context;
@@ -81,21 +81,19 @@ pub mod dominariworld {
         Ok(())
     }
 
-    /**
-     * Systems are registered PER COMPONENT PER INSTANCE
-     * Only the person that *made* the instance can register systems for that instance.
-     * This could be changed in other worlds to be a DAO based vote.
-     */
-    pub fn register_system_for_component(ctx: Context<RegisterSystem>) -> Result<()> {
-        ctx.accounts.system_registration.component = ctx.accounts.component.key();
+    pub fn register_system(ctx: Context<RegisterSystem>) -> Result<()> {
         ctx.accounts.system_registration.system = ctx.accounts.system.key();
 
         emit!(NewSystemRegistration {
             world_instance: ctx.accounts.world_instance.key(),
-            component: ctx.accounts.component.key(),
             system: ctx.accounts.system.key(),
             system_registration: ctx.accounts.system_registration.key()
         });
+        Ok(())
+    }
+
+    pub fn add_components_to_system_registration(ctx:Context<AddComponentsToSystemRegistration>, components:Vec<Pubkey>) -> Result<()> {
+        ctx.accounts.system_registration.components.append(components.clone().as_mut());
         Ok(())
     }
 
@@ -122,7 +120,7 @@ pub mod dominariworld {
         Ok(())
     }
 
-    pub fn req_remove_component(ctx:Context<RemoveComponent>, comp: usize) -> Result<()> {
+    pub fn req_remove_component(ctx:Context<RemoveComponent>, components: Vec<Pubkey>) -> Result<()> {
         let accounts = ecs::cpi::accounts::RemoveComponent {
             payer: ctx.accounts.payer.to_account_info(),
             system_program: ctx.accounts.system_program.to_account_info(),
@@ -139,7 +137,7 @@ pub mod dominariworld {
             ctx.accounts.universe.to_account_info(),
             accounts,
             signer_seeds
-        ), comp)?;
+        ), components)?;
 
         //No need to emit an event, as Universe will do so
         Ok(())
@@ -152,7 +150,7 @@ pub mod dominariworld {
      * Universe contract supports batch modification but would require redoing how system registration
      * works on the world level.
      */
-    pub fn req_modify_component(ctx:Context<ModifyComponent>, comp: usize, data:Vec<u8>) -> Result<()> {
+    pub fn req_modify_component(ctx:Context<ModifyComponent>, components: Vec<Pubkey>, data:Vec<Vec<u8>>) -> Result<()> {
         let accounts = ecs::cpi::accounts::ModifyComponent {
             entity: ctx.accounts.entity.to_account_info(),
             world_signer: ctx.accounts.world_config.to_account_info()
@@ -167,7 +165,7 @@ pub mod dominariworld {
             ctx.accounts.universe.to_account_info(),
             accounts,
             signer_seeds
-        ), vec![comp], vec![data])?;
+        ), components, data)?;
 
         //No need to emit an event, as Universe will do so
         Ok(())

@@ -39,10 +39,10 @@ Card Components: Card Stats (Blueprint)
 
 ## Scripts
     -> Deploy & Register
-        -> Deploy Universe.sol
-        -> Deploy Dominari World, register with Universe
+        - Deploy Universe, World, Systems
+        -> Initalize World with Universe
         -> Register Components to Dominari World
-        -> Deploy Dominari Systems
+        -> Instance a World
         -> Register DominariSystems for Each of the Registered Components
 
     -> Setup Map
@@ -64,7 +64,7 @@ Card Components: Card Stats (Blueprint)
     -> Build Phase Sim 01
         -> Two players buy and build various features on locations
 
-    -> Phase Phase Sim 01
+    -> Phase Phase Sim 02
         -> Two players spawn units and use features while attempting to kill other player off
 
 ## Systems

@@ -24,6 +24,6 @@ pub struct ComponentSchema{
 #[account]
 pub struct SystemRegistration{
     pub instance: u64,
-    pub component: Pubkey, //PDA of the Component Schema
+    pub components: Vec<Pubkey>, //PDA of the Component Schema
     pub system: Pubkey
 }

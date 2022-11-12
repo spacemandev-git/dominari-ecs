@@ -5,7 +5,6 @@ use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::{signature::Keypair};
-use dominarisystems::accounts;
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -109,11 +108,7 @@ impl World {
         return world_config_acc;
     }
 
-    pub fn register_system_for_component(&self, schema:String, system:Pubkey, instance:u64, payer:Pubkey) -> Result<Vec<Instruction>, anchor_client::ClientError> {
-        let world_config = Pubkey::find_program_address(&[
-            b"world_signer".as_ref(),
-        ], &self.program.id()).0;
-
+    pub fn register_system(&self, system:Pubkey, instance:u64, payer:Pubkey) -> Result<Vec<Instruction>, anchor_client::ClientError> {
         let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config();
 
         let world_instance = Pubkey::find_program_address(&[
@@ -127,13 +122,8 @@ impl World {
             world_instance.to_bytes().as_ref()
         ], &self.program.id()).0;
 
-        let component = Pubkey::find_program_address(&[
-            schema.as_bytes().as_ref(),
-        ], &self.program.id()).0;
-
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
-            component.to_bytes().as_ref(),
             world_instance.to_bytes().as_ref(),
             system.to_bytes().as_ref()
         ], &self.program.id()).0;
@@ -144,12 +134,54 @@ impl World {
                     payer,
                     system_program,
                     world_instance,
-                    component,
                     instance_authority,
                     system_registration,
                     system,
                 }) 
-                .args(dominariworld::instruction::RegisterSystemForComponent {})
+                .args(dominariworld::instruction::RegisterSystem {})
+                .instructions()
+    }
+
+    pub fn add_components_to_system_registration(&self, schemas:Vec<ComponentSchema>, system:Pubkey, instance:u64, payer:Pubkey) -> Result<Vec<Instruction>, anchor_client::ClientError> {
+        let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config();
+
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            &self.program.id().as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &world_config_acc.universe).0;
+
+        let instance_authority = Pubkey::find_program_address(&[
+            b"Instance_Authority".as_ref(),
+            world_instance.to_bytes().as_ref()
+        ], &self.program.id()).0;
+
+        let mut components: Vec<Pubkey> = vec![];
+        for schema in schemas.iter() {
+            components.push(Pubkey::find_program_address(&[
+                schema.url.as_bytes().as_ref(),
+            ], &self.program.id()).0);
+        }
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            system.to_bytes().as_ref()
+        ], &self.program.id()).0;
+
+        self.program
+                .request()
+                .accounts(dominariworld::accounts::AddComponentsToSystemRegistration {
+                    payer,
+                    system_program,
+                    world_instance,
+                    instance_authority,
+                    system_registration,
+                    system,
+                }) 
+                .args(dominariworld::instruction::AddComponentsToSystemRegistration {
+                    components,
+                })
                 .instructions()
     }
 

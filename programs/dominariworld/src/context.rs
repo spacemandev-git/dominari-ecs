@@ -109,7 +109,6 @@ pub struct RegisterSystem <'info> {
         constraint = world_instance.world.key() == program_id.key()
     )]
     pub world_instance: Account<'info, WorldInstance>,
-    pub component: Account<'info, ComponentSchema>,
 
     /// Make sure the instance authority is of the world instance that's passed in
     #[account(
@@ -122,12 +121,50 @@ pub struct RegisterSystem <'info> {
         payer=payer,
         seeds=[
             b"System_Registration",
-            component.key().as_ref(),
             world_instance.key().as_ref(),
             system.key().as_ref()
         ],
         bump,
         space=8+8+32+32
+    )]
+    pub system_registration: Account<'info, SystemRegistration>,
+
+    /// CHECK: This can be any pubkey, but likely will be pubkey of 
+    /// PDA Signer from System
+    pub system: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+#[instruction(components: Vec<Pubkey>)]
+pub struct AddComponentsToSystemRegistration <'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+
+    /// Universe World Instance Account
+    /// Make sure that its a world instance that belongs to *this* world
+    #[account(
+        constraint = world_instance.world.key() == program_id.key()
+    )]
+    pub world_instance: Account<'info, WorldInstance>,
+
+    /// Make sure the instance authority is of the world instance that's passed in
+    #[account(
+        constraint = instance_authority.instance == world_instance.instance
+    )]
+    pub instance_authority: Account<'info, InstanceAuthority>,
+    
+    #[account(
+        mut,
+        realloc = system_registration.to_account_info().data_len() + (components.len()*32),
+        realloc::payer = payer,
+        realloc::zero = false,
+        seeds=[
+            b"System_Registration",
+            world_instance.key().as_ref(),
+            system.key().as_ref()
+        ],
+        bump,
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -156,8 +193,9 @@ pub struct AddComponents<'info>{
     
     // System is allowed to modify the component it's adding
     // System is a signer
+    // We assume 
     #[account(
-        constraint = check_components_can_be_modified_by_system(components, system_registration.system) && system_registration.system.key() == system.key()
+        constraint = check_components_can_be_modified_by_system(&get_pubkeys_from_components(&components), &system_registration.components) && system_registration.system.key() == system.key()
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -165,7 +203,7 @@ pub struct AddComponents<'info>{
 }
 
 #[derive(Accounts)]
-#[instruction(comp: usize)]
+#[instruction(components: Vec<Pubkey>)]
 pub struct RemoveComponent<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -185,7 +223,7 @@ pub struct RemoveComponent<'info>{
     // System is allowed to modify the component it's adding
     // System is a signer
     #[account(
-        constraint = system_registration.component.key() == entity.components.get(comp).unwrap().component_key.key() && system_registration.system.key() == system.key()
+        constraint = check_components_can_be_modified_by_system(&components, &system_registration.components) && system_registration.system.key() == system.key()
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -193,7 +231,7 @@ pub struct RemoveComponent<'info>{
 }
 
 #[derive(Accounts)]
-#[instruction(comp: usize, data:Vec<u8>)]
+#[instruction(components: Vec<Pubkey>, data:Vec<Vec<u8>>)]
 pub struct ModifyComponent<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -213,7 +251,7 @@ pub struct ModifyComponent<'info>{
     // System is allowed to modify the component it's adding
     // System is a signer
     #[account(
-        constraint = system_registration.component.key() == entity.components.get(comp).unwrap().component_key.key() && system_registration.system.key() == system.key()
+        constraint = check_components_can_be_modified_by_system(&components, &system_registration.components) && system_registration.system.key() == system.key()
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -222,11 +260,25 @@ pub struct ModifyComponent<'info>{
 
 /*************************************************UTIL Functions */
 
-pub fn check_components_can_be_modified_by_system(components: Vec<SerializedComponent>, system_registration: Pubkey) -> bool {
-    for comp in components {
-        if comp.component_key.key() != system_registration.key(){
-            return false;
+pub fn check_components_can_be_modified_by_system(components: &Vec<Pubkey>, system_components: &Vec<Pubkey>) -> bool {
+    let mut pubkeys_found:usize = 0;
+    for component in system_components.iter() {
+        if components.contains(component) {
+            pubkeys_found += 1;
         }
     }
-    return true;
+
+    if pubkeys_found == components.len() {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+pub fn get_pubkeys_from_components(components: &Vec<SerializedComponent>) -> Vec<Pubkey> {
+    let mut pubkeys = vec![];
+    for comp in components {
+        pubkeys.push(comp.component_key.key());
+    }
+    pubkeys
 }
