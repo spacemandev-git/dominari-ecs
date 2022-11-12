@@ -10,3 +10,4 @@ anchor-client = "0.25.0"
 ecs = { path = "../../programs/ecs", features = ["no-entrypoint"]}
 dominariworld = { path = "../../programs/dominariworld", features = ["no-entrypoint"]} 
 dominarisystems = { path = "../../programs/dominarisystems", features = ["no-entrypoint"]}
+borsh = "0.9.3"

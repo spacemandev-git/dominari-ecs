@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
 
 use crate::account::*;
+use crate::constant::*;
 
 use ecs::{
     self,
     account::{WorldInstance, Entity},
-    ID as UniverseID,
     program::Ecs,
     state::SerializedComponent
 };
@@ -39,6 +39,7 @@ pub struct InstanceWorld<'info>{
     )]
     pub world_config: Account<'info, WorldConfig>,
 
+    /* 
     #[account(
         seeds=[
             b"World",
@@ -49,6 +50,10 @@ pub struct InstanceWorld<'info>{
         seeds::program = UniverseID,
     )]
     pub world_instance: Account<'info, WorldInstance>,
+    */
+    /// CHECK: Initalized in CPI call
+    #[account(mut)]
+    pub world_instance: AccountInfo<'info>,
     pub universe: Program<'info, Ecs>,
 
     // Instance Authority is in charge of allowing new systems onto this instance
@@ -60,7 +65,7 @@ pub struct InstanceWorld<'info>{
             world_instance.key().as_ref()
         ],
         bump,
-        space=8+32,
+        space=8+8+32,
     )]
     pub instance_authority: Account<'info, InstanceAuthority>
 
@@ -80,7 +85,7 @@ pub struct RegisterComponent<'info>{
             schema.as_bytes(),
         ],
         bump,
-        space=8+512
+        space=8+STRING_MAX_SIZE
     )]
     pub component: Account<'info, ComponentSchema>,
 
@@ -125,7 +130,10 @@ pub struct RegisterSystem <'info> {
         space=8+8+32+32
     )]
     pub system_registration: Account<'info, SystemRegistration>,
-    pub system: Signer<'info>,
+
+    /// CHECK: This can be any pubkey, but likely will be pubkey of 
+    /// PDA Signer from System
+    pub system: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]

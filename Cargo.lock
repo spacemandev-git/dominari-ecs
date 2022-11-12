@@ -1121,6 +1121,7 @@ name = "dominari"
 version = "0.1.0"
 dependencies = [
  "anchor-client",
+ "borsh",
  "dominarisystems",
  "dominariworld",
  "ecs",
