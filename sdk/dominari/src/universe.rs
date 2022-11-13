@@ -1,24 +1,13 @@
-use anchor_client::Program;
-use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
-use anchor_client::solana_sdk::{signature::Keypair};
-use std::rc::Rc;
+use solana_client_wasm::WasmClient;
 
 pub struct Universe {
-    pub program: Program
+    pub client: WasmClient
 }
 
 impl Universe {
-    pub fn new(rpc:&str, wss: &str, mut keypair: Option<Keypair>) -> Self {
-        if keypair.is_none() {
-            keypair = Some(Keypair::new());
-        }
-
-        let payer = Rc::new(keypair.unwrap());
-        let program = anchor_client::Client::new_with_options(anchor_client::Cluster::Custom(rpc.to_string(), wss.to_string()), payer, CommitmentConfig::confirmed()).program(ecs::id());
-        
+    pub fn new(rpc: &str) -> Self {
         return Universe {
-            program,
-        };
+            client: WasmClient::new(rpc)
+        }
     }
-
 }

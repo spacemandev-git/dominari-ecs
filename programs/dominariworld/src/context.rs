@@ -231,7 +231,7 @@ pub struct AddComponents<'info>{
 #[instruction(components: Vec<Pubkey>)]
 pub struct RemoveComponent<'info>{
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub benefactor: Signer<'info>,
     pub system_program: Program<'info, System>,
 
     //Used to Sign Tx for the CPI
@@ -278,6 +278,33 @@ pub struct ModifyComponent<'info>{
 
     pub universe: Program<'info, Ecs>, 
 }
+
+#[derive(Accounts)]
+pub struct RemoveEntity<'info>{
+    #[account(mut)]
+    pub benefactor: Signer<'info>,
+    pub system_program: Program<'info, System>,
+
+    //Used to Sign Tx for the CPI
+    pub world_config: Account<'info, WorldConfig>,
+
+    #[account(
+        mut,
+        constraint = entity.world.key() == program_id.key() && entity.instance == system_registration.instance && entity.components.len() == 0
+    )]
+    pub entity: Account<'info, Entity>,
+    
+    pub system: Signer<'info>,
+    
+    // ANY registered system can close an empty entity
+    #[account(
+        constraint = system_registration.system.key() == system.key()
+    )]
+    pub system_registration: Account<'info, SystemRegistration>,
+
+    pub universe: Program<'info, Ecs>, 
+}
+
 
 /*************************************************UTIL Functions */
 

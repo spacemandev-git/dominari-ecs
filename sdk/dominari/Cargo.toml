@@ -6,9 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anchor-client = "0.25.0"
+anchor-lang = "0.25.0"
+solana-client-wasm = { git = "https://github.com/spacemandev-git/solana-playground" }
+solana-sdk = "1.10.34"
 ecs = { path = "../../programs/ecs", features = ["no-entrypoint"]}
 dominariworld = { path = "../../programs/dominariworld", features = ["no-entrypoint"]} 
 dominarisystems = { path = "../../programs/dominarisystems", features = ["no-entrypoint"]}
 borsh = "0.9.3"
-spl-token = { version="3.3.0", features = ["no-entrypoint"] }

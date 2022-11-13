@@ -90,6 +90,10 @@ pub mod ecs {
         Ok(())
     }
 
+    pub fn remove_entity(_ctx:Context<RemoveEntity>) -> Result<()> {
+        Ok(())
+    }
+
 }
 
 /*

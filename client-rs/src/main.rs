@@ -1,13 +1,12 @@
 use anchor_client::{solana_sdk::{signature::{Keypair, read_keypair_file}}};
 use anchor_client::solana_client::rpc_client::RpcClient;
-use dominari::{universe::Universe, world::{World}, dominari::Dominari};
+use dominari::{universe::Universe, world::World, dominari::Dominari};
 use std::env;
 
 mod register;
 use register::*;
 
 mod map;
-use map::*;
 
 const RPC_URL:&str = "http://64.227.14.242:8899";
 
@@ -23,9 +22,9 @@ fn main() {
     let client: Client = Client {
         id01: read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).unwrap(),
         rpc: RpcClient::new(RPC_URL),
-        universe: Universe::new(RPC_URL, RPC_URL.replace("http", "wss").as_str(), None),
-        world: World::new(RPC_URL, RPC_URL.replace("http", "wss").as_str(), None),
-        dominari: Dominari::new(RPC_URL, RPC_URL.replace("http", "wss").as_str(), None),
+        universe: Universe::new(RPC_URL),
+        world: World::new(RPC_URL),
+        dominari: Dominari::new(RPC_URL),
     };
 
     let args: Vec<String> = env::args().collect();
@@ -57,13 +56,13 @@ pub fn register(client: &Client) {
     init_world(&client);
     
     // Register Components to World
-    init_components(&client);
+    //init_components(&client);
     
     // Instance World
-    let instance = instance_world(&client);
+    //let instance = instance_world(&client);
     
     // Register Dominari Systems for all Components
-    register_system_for_component(&client, instance)
+    //register_system_for_component(&client, instance)
 
 }
 

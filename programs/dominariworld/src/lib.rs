@@ -145,7 +145,7 @@ pub mod dominariworld {
 
     pub fn req_remove_component(ctx:Context<RemoveComponent>, components: Vec<Pubkey>) -> Result<()> {
         let accounts = ecs::cpi::accounts::RemoveComponent {
-            payer: ctx.accounts.payer.to_account_info(),
+            benefactor: ctx.accounts.benefactor.to_account_info(),
             system_program: ctx.accounts.system_program.to_account_info(),
             entity: ctx.accounts.entity.to_account_info(),
             world_signer: ctx.accounts.world_config.to_account_info()
@@ -166,13 +166,6 @@ pub mod dominariworld {
         Ok(())
     }
 
-    /**
-     * In this implementation we can only modify one component at at time because we have 
-     * 1:1 mapping between system registration to component accounts.
-     * 
-     * Universe contract supports batch modification but would require redoing how system registration
-     * works on the world level.
-     */
     pub fn req_modify_component(ctx:Context<ModifyComponent>, components: Vec<Pubkey>, data:Vec<Vec<u8>>) -> Result<()> {
         let accounts = ecs::cpi::accounts::ModifyComponent {
             entity: ctx.accounts.entity.to_account_info(),
@@ -193,5 +186,29 @@ pub mod dominariworld {
         //No need to emit an event, as Universe will do so
         Ok(())
     }
+
+    pub fn req_remove_entity(ctx:Context<RemoveEntity>) -> Result<()> {
+        let accounts = ecs::cpi::accounts::RemoveEntity {
+            benefactor: ctx.accounts.benefactor.to_account_info(),
+            system_program: ctx.accounts.system_program.to_account_info(),
+            entity: ctx.accounts.entity.to_account_info(),
+            world_signer: ctx.accounts.world_config.to_account_info()
+        };
+        let world_signer_seeds:&[&[u8]] = &[
+            b"world_signer",
+            &[*ctx.bumps.get("world_config").unwrap()]
+        ];
+        let signer_seeds = &[world_signer_seeds];
+        
+        ecs::cpi::remove_entity(CpiContext::new_with_signer(
+            ctx.accounts.universe.to_account_info(),
+            accounts,
+            signer_seeds
+        ))?;
+
+        //No need to emit an event, as Universe will do so
+        Ok(())
+    }
+
     
 }

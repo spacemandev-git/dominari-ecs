@@ -97,13 +97,13 @@ pub struct AddComponent<'info> {
 #[instruction(removed_components: Vec<Pubkey>)]
 pub struct RemoveComponent<'info> {
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub benefactor: Signer<'info>,
     pub system_program: Program<'info, System>,
 
     #[account(
         mut,
         realloc = entity.to_account_info().data_len() - get_removed_size(&entity.components, &removed_components),
-        realloc::payer = payer,
+        realloc::payer = benefactor,
         realloc::zero = false,
         constraint = entity.world.key() == world_signer.key()
     )]
@@ -126,6 +126,30 @@ pub struct ModifyComponent<'info> {
     #[account(
         mut,
         constraint = entity.world.key() == world_signer.key()
+    )]
+    pub entity: Account<'info, Entity>,
+
+    // Only the Entity's World can make changes to the Entity
+    #[account(
+        seeds = [
+            b"world_signer",
+        ],
+        bump,
+        seeds::program = entity.world.key()
+    )]
+    pub world_signer: Signer<'info>
+}
+
+#[derive(Accounts)]
+pub struct RemoveEntity<'info>{
+    #[account(mut)]
+    pub benefactor: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    
+    #[account(
+        mut,
+        constraint = entity.world.key() == world_signer.key() && entity.components.len() == 0, // Can only delete empty Entities
+        close = benefactor
     )]
     pub entity: Account<'info, Entity>,
 
