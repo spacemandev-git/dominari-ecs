@@ -97,6 +97,29 @@ pub mod dominariworld {
         Ok(())
     }
 
+    pub fn mint_entity(ctx:Context<MintEntity>) -> Result<()> {
+        let accounts = ecs::cpi::accounts::MintEntity {
+            entity: ctx.accounts.entity.to_account_info(),
+            payer: ctx.accounts.payer.to_account_info(),
+            system_program: ctx.accounts.system_program.to_account_info(),
+            world_instance: ctx.accounts.world_instance.to_account_info(),
+            world_signer: ctx.accounts.world_config.to_account_info(),
+        };  
+        let world_signer_seeds:&[&[u8]] = &[
+            b"world_signer",
+            &[*ctx.bumps.get("world_config").unwrap()]
+        ];
+        let signer_seeds = &[world_signer_seeds];
+
+        ecs::cpi::mint_entity(CpiContext::new_with_signer(
+            ctx.accounts.universe.to_account_info(),
+            accounts,
+            signer_seeds
+        ))?;
+
+        Ok(())
+    }
+
     pub fn req_add_component(ctx:Context<AddComponents>, components: Vec<SerializedComponent>) -> Result<()> {
         let accounts = ecs::cpi::accounts::AddComponent {
             payer: ctx.accounts.payer.to_account_info(),

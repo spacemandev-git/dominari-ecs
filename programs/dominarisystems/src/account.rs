@@ -18,3 +18,8 @@ pub struct Blueprint {
     pub entity_name: String, // Max Size 128 Bytes
     pub components: Vec<SerializedComponent>
 }
+
+// PDA: ABC
+// Vec<Comp> = [Damage:5]
+
+// Player.Cards = Vec<pubkey> = [ABC]

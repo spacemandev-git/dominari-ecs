@@ -19,8 +19,6 @@ use state::*;
 #[program]
 pub mod ecs {
 
-    use anchor_lang::solana_program::program::invoke;
-
     use super::*;
 
     pub fn register_world(ctx:Context<RegisterWorldInstance>, world:Pubkey, instance: u64) -> Result<()> {
@@ -37,6 +35,65 @@ pub mod ecs {
     }
 
     pub fn mint_entity(ctx:Context<MintEntity>) -> Result<()> {
+        // Increment World Instance Entities
+        ctx.accounts.world_instance.entities += 1;
+
+        // Set Entity Data
+        ctx.accounts.entity.entity_id = ctx.accounts.world_instance.entities;
+        ctx.accounts.entity.world = ctx.accounts.world_instance.world.key();
+        ctx.accounts.entity.instance = ctx.accounts.world_instance.instance;
+        ctx.accounts.entity.components = vec![];
+
+        emit!(NewEntityMinted{
+            world_instance: ctx.accounts.world_instance.key(),
+            entity_id: ctx.accounts.entity.entity_id,
+            entity: ctx.accounts.entity.key()
+        });
+
+        Ok(())
+    }
+    
+    pub fn add_components(ctx:Context<AddComponent>, components:Vec<SerializedComponent>) -> Result<()> {
+        ctx.accounts.entity.components.append(components.clone().as_mut());
+        
+        emit!(NewComponentAdded{
+            entity: ctx.accounts.entity.key(),
+            components: components
+        });
+        Ok(())
+    }
+
+    pub fn remove_component(ctx:Context<RemoveComponent>, removed_components: Vec<Pubkey>) -> Result<()> {
+        for comp in removed_components {
+            let position = ctx.accounts.entity.components.iter().position(|serialized_comp| serialized_comp.component_key.key() == comp.key()).unwrap();
+            let removed_comp = ctx.accounts.entity.components.remove(position);
+            emit!(ComponentRemoved {
+                entity: ctx.accounts.entity.key(),
+                component: removed_comp
+            });  
+        }   
+
+        Ok(())
+    }
+
+    pub fn modify_components(ctx:Context<ModifyComponent>, components: Vec<Pubkey>, data:Vec<Vec<u8>>) -> Result<()> {
+        for (idx, comp) in components.iter().enumerate() {
+            let position = ctx.accounts.entity.components.iter().position(|serialized_comp| serialized_comp.component_key.key() == comp.key()).unwrap();
+            ctx.accounts.entity.components.get_mut(position).unwrap().data = data.get(idx).unwrap().clone();
+
+            emit!(ComponentModified {
+                entity: ctx.accounts.entity.key(),
+                component: comp.key()
+            });
+        }
+
+        Ok(())
+    }
+
+}
+
+/*
+    Entity Mint that's also a SPL Token
         // Initalize SPL Token
         let mint_ix = spl_token::instruction::initialize_mint2(
             &spl_token::ID,
@@ -81,59 +138,4 @@ pub mod ecs {
             ),
             1
         )?;
-
-        // Set Entity Data
-        ctx.accounts.entity.world = ctx.accounts.world_instance.world.key();
-        ctx.accounts.entity.instance = ctx.accounts.world_instance.instance;
-
-        emit!(NewEntityMinted{
-            world_instance: ctx.accounts.world_instance.key(),
-            mint: ctx.accounts.mint.key(),
-            entity: ctx.accounts.entity.key()
-        });
-
-        Ok(())
-    }
-
-    pub fn add_components(ctx:Context<AddComponent>, components:Vec<SerializedComponent>) -> Result<()> {
-        ctx.accounts.entity.components.append(components.clone().as_mut());
-        
-        emit!(NewComponentAdded{
-            entity: ctx.accounts.entity.key(),
-            components: components
-        });
-        Ok(())
-    }
-
-    /**
-     * Can only remove one component at a time as it changes IDX
-     * Possibly could do multiple remove if you scan by pubkey instead of idx
-     */
-    pub fn remove_component(ctx:Context<RemoveComponent>, removed_components: Vec<Pubkey>) -> Result<()> {
-        for comp in removed_components {
-            let position = ctx.accounts.entity.components.iter().position(|serialized_comp| serialized_comp.component_key.key() == comp.key()).unwrap();
-            let removed_comp = ctx.accounts.entity.components.remove(position);
-            emit!(ComponentRemoved {
-                entity: ctx.accounts.entity.key(),
-                component: removed_comp
-            });  
-        }   
-
-        Ok(())
-    }
-
-    pub fn modify_components(ctx:Context<ModifyComponent>, components: Vec<Pubkey>, data:Vec<Vec<u8>>) -> Result<()> {
-        for (idx, comp) in components.iter().enumerate() {
-            let position = ctx.accounts.entity.components.iter().position(|serialized_comp| serialized_comp.component_key.key() == comp.key()).unwrap();
-            ctx.accounts.entity.components.get_mut(position).unwrap().data = data.get(idx).unwrap().clone();
-
-            emit!(ComponentModified {
-                entity: ctx.accounts.entity.key(),
-                component: comp.key()
-            });
-        }
-
-        Ok(())
-    }
-
-}
+ */

@@ -19,5 +19,6 @@ pub struct RelevantComponentKeys {
     pub healing_power: Pubkey,
     pub health: Pubkey,
     pub damage: Pubkey,
-    pub troop_class: Pubkey
+    pub troop_class: Pubkey,
+    pub active: Pubkey,
 }

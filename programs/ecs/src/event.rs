@@ -12,7 +12,7 @@ pub struct NewWorldInitalized{
 #[event]
 pub struct NewEntityMinted{
     pub world_instance: Pubkey,
-    pub mint: Pubkey,
+    pub entity_id: u64,
     pub entity: Pubkey
 }
 

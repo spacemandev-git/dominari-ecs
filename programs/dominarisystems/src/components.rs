@@ -110,3 +110,8 @@ pub enum TroopClass {
     Armor,
     Aircraft
 }
+
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct ComponentActive{
+    pub class: bool,
+}

@@ -67,7 +67,13 @@ impl World {
             })
             .instructions()          
     }
-    
+
+    pub fn get_component_key(&self, url:String) -> Pubkey {
+        Pubkey::find_program_address(&[
+            url.as_bytes().as_ref(),
+        ], &self.program.id()).0
+    }
+
     pub fn instance_world(&self, payer:Pubkey) -> Result<Vec<Instruction>, anchor_client::ClientError> {
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
@@ -198,33 +204,111 @@ impl World {
                 .instructions()
     }
 
+
 }
 
 pub struct ComponentSchema {
+    pub key: Pubkey,
     pub url: String
 }
 
 impl ComponentSchema {
-    pub fn get_schemas() -> Vec<ComponentSchema> {
+    pub fn get_schemas(world: &World) -> Vec<ComponentSchema> {
         vec![
-            ComponentSchema { url: "metadata.json".to_string() },
-            ComponentSchema { url: "mapmeta.json".to_string() },
-            ComponentSchema { url: "location.json".to_string() },
-            ComponentSchema { url: "feature.json".to_string() },
-            ComponentSchema { url: "owner.json".to_string() },
-            ComponentSchema { url: "value.json".to_string() },
-            ComponentSchema { url: "occupant.json".to_string() },
-            ComponentSchema { url: "player_stats.json".to_string() },
-            ComponentSchema { url: "last_used_slot.json".to_string() },
-            ComponentSchema { url: "rank.json".to_string() },
-            ComponentSchema { url: "range.json".to_string() },
-            ComponentSchema { url: "drop_table.json".to_string() },
-            ComponentSchema { url: "uses.json".to_string() },
-            ComponentSchema { url: "healing_power.json".to_string() },
-            ComponentSchema { url: "health.json".to_string() },
-            ComponentSchema { url: "damage.json".to_string() },
-            ComponentSchema { url: "troop_class.json".to_string() },
-
+            ComponentSchema { 
+                key: world.get_component_key("metadata.json".to_string()),
+                url: "metadata.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("metadata.json".to_string()),
+                url: "mapmeta.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("location.json".to_string()),
+                url: "location.json".to_string()
+            },
+            ComponentSchema { 
+                key: world.get_component_key("feature.json".to_string()),
+                url: "feature.json".to_string() 
+            },            
+            ComponentSchema {
+                key: world.get_component_key("metadata.json".to_string()), 
+                url: "owner.json".to_string() 
+            },
+            ComponentSchema {
+                key: world.get_component_key("value.json".to_string()), 
+                url: "value.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("occupant.json".to_string()),
+                url: "occupant.json".to_string() 
+            },
+            ComponentSchema {
+                key: world.get_component_key("player_stats.json".to_string()), 
+                url: "player_stats.json".to_string() 
+            },
+            ComponentSchema {
+                key: world.get_component_key("last_used_slot.json".to_string()),           
+                url: "last_used_slot.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("rank.json".to_string()),
+                url: "rank.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("drop_table.json".to_string()),
+                url: "range.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("metadata.json".to_string()),
+                url: "drop_table.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("uses.json".to_string()),
+                url: "uses.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("healing_power.json".to_string()),
+                url: "healing_power.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("health.json".to_string()),
+                url: "health.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("damage.json".to_string()),
+                url: "damage.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("troop_class.json".to_string()),
+                url: "troop_class.json".to_string() 
+            },
+            ComponentSchema { 
+                key: world.get_component_key("active.json".to_string()),
+                url: "active.json".to_string() 
+            },
         ]
     }
+}
+
+#[derive(Default)]
+pub struct RelevantComponentKeys {
+    pub metadata: Pubkey,
+    pub mapmeta: Pubkey,
+    pub location: Pubkey,
+    pub feature: Pubkey,
+    pub owner: Pubkey,
+    pub value: Pubkey,
+    pub occupant: Pubkey,
+    pub player_stats: Pubkey,
+    pub last_used: Pubkey,
+    pub rank: Pubkey,
+    pub range: Pubkey,
+    pub drop_table: Pubkey,
+    pub uses: Pubkey,
+    pub healing_power: Pubkey,
+    pub health: Pubkey,
+    pub damage: Pubkey,
+    pub troop_class: Pubkey,
+    pub active: Pubkey,
 }

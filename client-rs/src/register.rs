@@ -8,7 +8,7 @@
 */
 
 use anchor_client::{solana_sdk::{signer::Signer, transaction::Transaction}};
-use dominari::{world::{ComponentSchema}};
+use dominari::{world::{ComponentSchema, RelevantComponentKeys}};
 
 use crate::*;
 
@@ -23,9 +23,10 @@ pub fn init_world(client: &Client) {
     println!("Initialized World!")
 }
 
-pub fn init_components(client: &Client) {
+pub fn init_components(client: &Client) -> RelevantComponentKeys {
     println!("Current components registered: {:#}", client.world.get_world_config().1.components);
-    for schema in ComponentSchema::get_schemas() {
+    let schemas = ComponentSchema::get_schemas(&client.world);
+    for schema in schemas {
         println!("Registering Component: {}", schema.url);
         let mut comp_tx = Transaction::new_with_payer(
             client.world.register_component(schema.url, client.id01.pubkey()).unwrap().as_slice(),
@@ -35,6 +36,8 @@ pub fn init_components(client: &Client) {
         client.rpc.send_and_confirm_transaction(&comp_tx).unwrap();
     }
     println!("Components after registration loop: {:#}", client.world.get_world_config().1.components);
+    return RelevantComponentKeys { 
+        metadata: (), mapmeta: (), location: (), feature: (), owner: (), value: (), occupant: (), player_stats: (), last_used: (), rank: (), range: (), drop_table: (), uses: (), healing_power: (), health: (), damage: (), troop_class: (), active: () }
 }
 
 pub fn instance_world(client: &Client) -> u64 {

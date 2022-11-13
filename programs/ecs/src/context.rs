@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::ID as SPLID;
 
 use crate::account::*;
 use crate::state::*;
@@ -14,7 +13,7 @@ pub struct RegisterWorldInstance <'info> {
     #[account(
         init,
         payer=payer,
-        space=8+32+8,
+        space=8+32+8+8,
         seeds=[
             b"World",
             world.key().to_bytes().as_ref(),
@@ -42,31 +41,29 @@ pub struct MintEntity<'info>{
     pub system_program: Program<'info, System>,
 
     pub world_instance: Account<'info, WorldInstance>,
-    /// CHECK: Passed in as AI because it'll be initalized through CPI
-    pub mint: AccountInfo<'info>,
+
     #[account(
         init,
         payer=payer,
-        space=8+32+32+32+8, //It is expected this will get Realloc'd every time a component is added
+        space=8+8+32+8+8, //It is expected this will get Realloc'd every time a component is added
         seeds = [
             b"Entity",
-            mint.key().as_ref(),
+            (world_instance.entities+1_u64).to_be_bytes().as_ref(),
             world_instance.key().as_ref()
         ],
         bump,
     )]
     pub entity: Account<'info, Entity>,
-    /// CHECK: This account will be marked owner & mint authority on the SPL Token
-    pub entity_owner: Signer<'info>,
-    /// CHECK: AI because it'll be an ATA that's created via CPI
-    #[account(mut)]
-    pub mint_ata: AccountInfo<'info>,
 
-    /// CHECK: Checks to make sure it's the right SPL Token Program
+    // Only the Entity's World can make changes to the Entity
     #[account(
-        constraint = spl_token_program.key() == SPLID
+        seeds = [
+            b"world_signer",
+        ],
+        bump,
+        seeds::program = world_instance.world.key()
     )]
-    pub spl_token_program: AccountInfo<'info>
+    pub world_signer: Signer<'info>
 }
 
 #[derive(Accounts)]
@@ -80,7 +77,8 @@ pub struct AddComponent<'info> {
         mut,
         realloc = entity.to_account_info().data_len() + compute_comp_arr_max_size(&components),
         realloc::payer = payer,
-        realloc::zero = false,
+        realloc::zero = true,
+        constraint = entity.world.key() == world_signer.key()
     )]
     pub entity: Account<'info, Entity>,
 
@@ -107,6 +105,7 @@ pub struct RemoveComponent<'info> {
         realloc = entity.to_account_info().data_len() - get_removed_size(&entity.components, &removed_components),
         realloc::payer = payer,
         realloc::zero = false,
+        constraint = entity.world.key() == world_signer.key()
     )]
     pub entity: Account<'info, Entity>,
 
@@ -124,7 +123,10 @@ pub struct RemoveComponent<'info> {
 #[derive(Accounts)]
 #[instruction(components: Vec<Pubkey>, data: Vec<Vec<u8>>)]
 pub struct ModifyComponent<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = entity.world.key() == world_signer.key()
+    )]
     pub entity: Account<'info, Entity>,
 
     // Only the Entity's World can make changes to the Entity

@@ -111,3 +111,8 @@ pub enum TroopClass {
     Armor,
     Aircraft
 }
+
+#[derive(BorshSerialize, BorshDeserialize, Debug, Clone)]
+pub struct ComponentActive{
+    pub active: bool,
+}

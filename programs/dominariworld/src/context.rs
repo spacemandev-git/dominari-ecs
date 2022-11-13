@@ -174,6 +174,32 @@ pub struct AddComponentsToSystemRegistration <'info> {
 }
 
 #[derive(Accounts)]
+pub struct MintEntity<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+
+    //Used to Sign Tx for the CPI
+    pub world_config: Account<'info, WorldConfig>,
+
+    /// CHECK: Initalized via CPI
+    #[account(mut)]
+    pub entity: AccountInfo<'info>,
+    
+    #[account(
+        constraint = world_instance.world.key() == program_id.key() && world_instance.instance == system_registration.instance
+    )]
+    pub world_instance: Account<'info, WorldInstance>,
+    pub system: Signer<'info>,
+    // All systems can make any entities they want
+    #[account(
+        constraint = system_registration.system.key() == system.key()
+    )]
+    pub system_registration: Account<'info, SystemRegistration>,
+    pub universe: Program<'info, Ecs>,     
+}
+
+#[derive(Accounts)]
 #[instruction(components: Vec<SerializedComponent>)]
 pub struct AddComponents<'info>{
     #[account(mut)]
@@ -193,7 +219,6 @@ pub struct AddComponents<'info>{
     
     // System is allowed to modify the component it's adding
     // System is a signer
-    // We assume 
     #[account(
         constraint = check_components_can_be_modified_by_system(&get_pubkeys_from_components(&components), &system_registration.components) && system_registration.system.key() == system.key()
     )]
@@ -233,10 +258,6 @@ pub struct RemoveComponent<'info>{
 #[derive(Accounts)]
 #[instruction(components: Vec<Pubkey>, data:Vec<Vec<u8>>)]
 pub struct ModifyComponent<'info>{
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub system_program: Program<'info, System>,
-
     //Used to Sign Tx for the CPI
     pub world_config: Account<'info, WorldConfig>,
 
