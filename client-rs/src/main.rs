@@ -1,6 +1,5 @@
 use dominari::{solana_sdk::{signature::{Keypair, read_keypair_file}}};
 use dominari::{universe::Universe, world::World, dominari::{Dominari}};
-use futures::executor::block_on;
 use solana_client_wasm::WasmClient;
 use std::env;
 
@@ -19,11 +18,8 @@ pub struct Client {
     pub dominari: Dominari
 }
 
-fn main() {
-    block_on(async_main())
-}
-
-async fn async_main() {
+#[tokio::main]
+async fn main() {
     let client: Client = Client {
         id01: read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).unwrap(),
         rpc: WasmClient::new(RPC_URL),
