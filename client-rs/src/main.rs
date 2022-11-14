@@ -1,6 +1,6 @@
 use anchor_client::{solana_sdk::{signature::{Keypair, read_keypair_file}}};
 use anchor_client::solana_client::rpc_client::RpcClient;
-use dominari::{universe::Universe, world::World, dominari::Dominari};
+use dominari::{universe::Universe, world::World, dominari::{Dominari, ComponentSchema}};
 use std::env;
 
 mod register;
@@ -18,12 +18,13 @@ pub struct Client {
     pub dominari: Dominari
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let client: Client = Client {
         id01: read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).unwrap(),
         rpc: RpcClient::new(RPC_URL),
         universe: Universe::new(RPC_URL),
-        world: World::new(RPC_URL),
+        world: World::new(RPC_URL, dominari::world::World::get_default_program_id()),
         dominari: Dominari::new(RPC_URL),
     };
 
@@ -33,7 +34,7 @@ fn main() {
     match args.get(1).unwrap().as_str() {
         "register" => {
             println!("Initializing Programs...");
-            register(&client);
+            register(&client).await;
         },
         "map" => {
             let instance:u64 = args.get(2).unwrap().parse().unwrap();
@@ -49,20 +50,20 @@ fn main() {
 
 }
 
-pub fn register(client: &Client) {
+pub async fn register(client: &Client) {
     // Deploy using Deploy.bash in Terminal
 
     // Initalize World with Universe
-    init_world(&client);
+    //init_world(&client);
     
     // Register Components to World
-    //init_components(&client);
+    init_components(&client).await;
     
     // Instance World
-    //let instance = instance_world(&client);
+    let instance = instance_world(&client).await;
     
     // Register Dominari Systems for all Components
-    //register_system_for_component(&client, instance)
+    register_system_for_component(&client, instance).await;
 
 }
 
