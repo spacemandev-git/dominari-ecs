@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 dominari = { path="../sdk/dominari" }
-anchor-client = "0.25.0"
 shellexpand = "2.1.0"
-tokio = { version="1.2", features = ["full"] }
+futures = "0.3.25"
+solana-client-wasm = { git = "https://github.com/spacemandev-git/solana-playground" }

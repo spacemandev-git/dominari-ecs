@@ -1,6 +1,7 @@
-use anchor_client::{solana_sdk::{signature::{Keypair, read_keypair_file}}};
-use anchor_client::solana_client::rpc_client::RpcClient;
-use dominari::{universe::Universe, world::World, dominari::{Dominari, ComponentSchema}};
+use dominari::{solana_sdk::{signature::{Keypair, read_keypair_file}}};
+use dominari::{universe::Universe, world::World, dominari::{Dominari}};
+use futures::executor::block_on;
+use solana_client_wasm::WasmClient;
 use std::env;
 
 mod register;
@@ -12,17 +13,20 @@ const RPC_URL:&str = "http://64.227.14.242:8899";
 
 pub struct Client {
     pub id01: Keypair,
-    pub rpc: RpcClient,
+    pub rpc: WasmClient,
     pub universe: Universe,
     pub world: World,
     pub dominari: Dominari
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
+    block_on(async_main())
+}
+
+async fn async_main() {
     let client: Client = Client {
         id01: read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).unwrap(),
-        rpc: RpcClient::new(RPC_URL),
+        rpc: WasmClient::new(RPC_URL),
         universe: Universe::new(RPC_URL),
         world: World::new(RPC_URL, dominari::world::World::get_default_program_id()),
         dominari: Dominari::new(RPC_URL),
@@ -54,7 +58,7 @@ pub async fn register(client: &Client) {
     // Deploy using Deploy.bash in Terminal
 
     // Initalize World with Universe
-    //init_world(&client);
+    init_world(&client).await;
     
     // Register Components to World
     init_components(&client).await;

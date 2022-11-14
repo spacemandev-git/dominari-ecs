@@ -8,8 +8,10 @@
         -> Initialize Tile(x,y) Entity & Add Components
 */
 
-use crate::*;
+//use crate::*;
 
+/* 
 pub fn init_map(client: &Client, instance:u64, max_x: usize, max_y: usize) {
     
 }
+*/
