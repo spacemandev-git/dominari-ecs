@@ -35,6 +35,7 @@ pub struct RegisterWorldInstance <'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(entity_id:u64)]
 pub struct MintEntity<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -45,10 +46,10 @@ pub struct MintEntity<'info>{
     #[account(
         init,
         payer=payer,
-        space=8+8+32+8+8, //It is expected this will get Realloc'd every time a component is added
+        space=8+8+8+32+8, //It is expected this will get Realloc'd every time a component is added
         seeds = [
             b"Entity",
-            (world_instance.entities+1_u64).to_be_bytes().as_ref(),
+            entity_id.to_be_bytes().as_ref(),
             world_instance.key().as_ref()
         ],
         bump,
@@ -168,7 +169,7 @@ pub struct RemoveEntity<'info>{
 pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize {
     let mut max_size:usize = 0;
     for comp in components {
-        max_size += comp.max_size;
+        max_size += comp.max_size as usize;
     }
     return max_size;
 }
@@ -177,7 +178,7 @@ pub fn get_removed_size(components: &Vec<SerializedComponent>, removed_component
     let mut removed_size:usize = 0;
     for comp in components.iter() {
         if removed_components.contains(&comp.component_key) {
-            removed_size += comp.max_size;
+            removed_size += comp.max_size as usize;
         }
     }
     return removed_size;

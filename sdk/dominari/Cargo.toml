@@ -14,3 +14,4 @@ dominariworld = { path = "../../programs/dominariworld", features = ["no-entrypo
 dominarisystems = { path = "../../programs/dominarisystems", features = ["no-entrypoint"]}
 borsh = "0.9.3"
 bimap = "0.6.2"
+rand = "0.8.5"

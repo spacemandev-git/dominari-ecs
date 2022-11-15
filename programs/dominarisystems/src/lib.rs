@@ -45,7 +45,7 @@ pub mod dominarisystems {
     /**
      * Players don't have blueprints cause they are largely unique
      */
-    pub fn system_register_player(ctx:Context<SystemRegisterPlayer>, player_name:String) -> Result<()> {
+    pub fn system_register_player(ctx:Context<SystemRegisterPlayer>, entity_id:u64, player_name:String) -> Result<()> {
         let system_signer_seeds:&[&[u8]] = &[
             b"System_Signer",
             &[*ctx.bumps.get("system_signer").unwrap()]
@@ -63,7 +63,7 @@ pub mod dominarisystems {
                 world_signer: ctx.accounts.world_config.to_account_info(),
             },
             signer_seeds
-        ))?;
+        ), entity_id)?;
 
 
         let mut components: Vec<SerializedComponent> = vec![];
@@ -103,17 +103,19 @@ pub mod dominarisystems {
             system_registration: ctx.accounts.system_registration.to_account_info(),
             universe: ctx.accounts.universe.to_account_info()
         };
-
+        
         dominariworld::cpi::req_add_component(CpiContext::new_with_signer(
             ctx.accounts.world_program.to_account_info(), 
             accounts, 
             signer_seeds
         ), components)?;
 
+        ctx.accounts.instance_index.map = ctx.accounts.player_entity.key();
+
         Ok(())
     }
 
-    pub fn system_initalize_map(ctx:Context<SystemInitMap>, max_x: u8, max_y: u8) -> Result<()> {
+    pub fn system_initalize_map(ctx:Context<SystemInitMap>, entity_id:u64, max_x: u8, max_y: u8) -> Result<()> {
         let system_signer_seeds:&[&[u8]] = &[
             b"System_Signer",
             &[*ctx.bumps.get("system_signer").unwrap()]
@@ -131,7 +133,7 @@ pub mod dominarisystems {
                 world_signer: ctx.accounts.world_config.to_account_info(),
             },
             signer_seeds
-        ))?;
+        ), entity_id)?;
 
 
         let mut components: Vec<SerializedComponent> = vec![];
@@ -173,13 +175,13 @@ pub mod dominarisystems {
             universe: ctx.accounts.universe.to_account_info()
         };
 
-
         dominariworld::cpi::req_add_component(CpiContext::new_with_signer(
             ctx.accounts.world_program.to_account_info(), 
             accounts, 
             signer_seeds
         ), components)?;
 
+        ctx.accounts.instance_index.map = ctx.accounts.map_entity.key();
         Ok(())
     }
 
@@ -187,7 +189,7 @@ pub mod dominarisystems {
      * Security Concern: There's no way to check if the Tile already exists
      * So it's up the caller of the program to make sure duplicates don't get created
      */
-    pub fn system_init_tile(ctx:Context<SystemInitTile>, x:u8, y:u8) -> Result<()> {
+    pub fn system_init_tile(ctx:Context<SystemInitTile>, entity_id:u64, x:u8, y:u8) -> Result<()> {
         let system_signer_seeds:&[&[u8]] = &[
             b"System_Signer",
             &[*ctx.bumps.get("system_signer").unwrap()]
@@ -205,7 +207,7 @@ pub mod dominarisystems {
                 world_signer: ctx.accounts.world_config.to_account_info(),
             },
             signer_seeds
-        ))?;
+        ), entity_id)?;
 
         let mut components: Vec<SerializedComponent> = vec![];
 
@@ -280,6 +282,8 @@ pub mod dominarisystems {
             accounts, 
             signer_seeds
         ), components)?;
+
+        ctx.accounts.instance_index.tiles.push(ctx.accounts.tile_entity.key());
         
         Ok(())
     }

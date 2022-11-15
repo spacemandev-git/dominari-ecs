@@ -1,5 +1,6 @@
 use dominari::{solana_sdk::{signature::{Keypair, read_keypair_file}}};
 use dominari::{universe::Universe, world::World, dominari::{Dominari}};
+use map::init_map;
 use solana_client_wasm::WasmClient;
 use std::env;
 
@@ -25,7 +26,7 @@ async fn main() {
         rpc: WasmClient::new(RPC_URL),
         universe: Universe::new(RPC_URL),
         world: World::new(RPC_URL, dominari::world::World::get_default_program_id()),
-        dominari: Dominari::new(RPC_URL),
+        dominari: Dominari::new(RPC_URL, dominari::world::World::get_default_program_id()),
     };
 
     let args: Vec<String> = env::args().collect();
@@ -38,10 +39,10 @@ async fn main() {
         },
         "map" => {
             let instance:u64 = args.get(2).unwrap().parse().unwrap();
-            let max_x:usize = args.get(3).unwrap().parse().unwrap();
-            let max_y:usize = args.get(4).unwrap().parse().unwrap();
+            let max_x:u8 = args.get(3).unwrap().parse().unwrap();
+            let max_y:u8 = args.get(4).unwrap().parse().unwrap();
             println!("Generating Map of size ({:#},{:#}) for instance {:#}", max_x, max_y, instance);
-
+            map(&client, instance, max_x, max_y).await;
         }
         &_ => {
             println!("Command ({}) Not Supported!", args.get(1).unwrap());
@@ -67,9 +68,16 @@ pub async fn register(client: &Client) {
 
 }
 
+pub async fn map(client: &Client, instance:u64, max_x:u8, max_y:u8) {
+    // Initalize the Map
+    init_map(client, instance, max_x, max_y).await;
+
+    // Initalize the Tiles
+    
+}
+
 /*
 ## Scripts
-
 
     -> Setup Features, Units, Mods
         -> Register Blueprints as Accounts on DominariSystems for each Feature, Unit, Mod

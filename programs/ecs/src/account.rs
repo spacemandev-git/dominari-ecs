@@ -14,8 +14,7 @@ pub struct WorldInstance {
 #[account]
 pub struct Entity {
     pub entity_id: u64,
-    pub world: Pubkey, // Acts as the Update Authority
-    pub benefactor: Pubkey, // Key that gets the $ when the PDA is closed
     pub instance: u64,
+    pub world: Pubkey, // Acts as the Update Authority
     pub components: Vec<SerializedComponent>,
 }

@@ -83,6 +83,19 @@ pub struct SystemRegisterPlayer <'info> {
         bump,
     )]
     pub starting_card_blueprint: Account<'info, Blueprint>,
+
+    #[account(
+        mut,
+        realloc = instance_index.to_account_info().data_len() + 32,
+        realloc::payer=payer,
+        realloc::zero=false,
+        seeds=[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ],
+        bump
+    )]
+    pub instance_index: Account<'info, InstanceIndex>,
 }
 
 #[derive(Accounts)]
@@ -108,6 +121,18 @@ pub struct SystemInitMap<'info> {
     /// CHECK: Initalized through CPI
     #[account(mut)]
     pub map_entity: AccountInfo<'info>,
+
+    #[account(
+        init,
+        payer=payer,
+        seeds=[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ],
+        bump,
+        space=8+32+8
+    )]
+    pub instance_index: Account<'info, InstanceIndex>,
 }
 
 #[derive(Accounts)]
@@ -133,13 +158,26 @@ pub struct SystemInitTile<'info> {
     /// CHECK: Initalized through CPI
     #[account(mut)]
     pub tile_entity: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        realloc = instance_index.to_account_info().data_len() + 32,
+        realloc::payer=payer,
+        realloc::zero=false,
+        seeds=[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ],
+        bump
+    )]
+    pub instance_index: Account<'info, InstanceIndex>,
 }
 
 /********************************************UTIL Fns */
 pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize {
     let mut max_size:usize = 0;
     for comp in components {
-        max_size += comp.max_size;
+        max_size += comp.max_size as usize;
     }
     return max_size;
 }

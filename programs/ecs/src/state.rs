@@ -4,6 +4,6 @@ use anchor_lang::prelude::*;
 pub struct SerializedComponent{
     pub component_key: Pubkey, // PDA from World Program
     pub world: Pubkey, // Update Authority
-    pub max_size: usize,
+    pub max_size: u64,
     pub data: Vec<u8>,
 }

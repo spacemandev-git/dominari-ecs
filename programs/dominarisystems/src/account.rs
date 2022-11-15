@@ -19,7 +19,16 @@ pub struct Blueprint {
     pub components: Vec<SerializedComponent>
 }
 
-// PDA: ABC
-// Vec<Comp> = [Damage:5]
-
-// Player.Cards = Vec<pubkey> = [ABC]
+/**
+ * Always needs a map for an instance
+ * Init during Init Map
+ * Then realloc+ on entity spawn
+ */
+#[account]
+pub struct InstanceIndex {
+    pub map: Pubkey,
+    pub tiles: Vec<Pubkey>,
+    pub features: Vec<Pubkey>,
+    pub unit: Vec<Pubkey>,
+    pub player: Vec<Pubkey>,
+}

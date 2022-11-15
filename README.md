@@ -91,3 +91,7 @@ Card Components: Card Stats (Blueprint)
     -> Entity Owners for a Game *must* be a PDA so it can modify/fetch them them!!
         -> Game Entities are Maps, Tiles, Blueprints
         -> 
+
+### TODO
+-> Account Compression for Entities
+-> xNFT for Entity Viewership

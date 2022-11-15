@@ -34,12 +34,12 @@ pub mod ecs {
         Ok(())
     }
 
-    pub fn mint_entity(ctx:Context<MintEntity>) -> Result<()> {
+    pub fn mint_entity(ctx:Context<MintEntity>, entity_id:u64) -> Result<()> {
         // Increment World Instance Entities
         ctx.accounts.world_instance.entities += 1;
 
         // Set Entity Data
-        ctx.accounts.entity.entity_id = ctx.accounts.world_instance.entities;
+        ctx.accounts.entity.entity_id = entity_id;
         ctx.accounts.entity.world = ctx.accounts.world_instance.world.key();
         ctx.accounts.entity.instance = ctx.accounts.world_instance.instance;
         ctx.accounts.entity.components = vec![];

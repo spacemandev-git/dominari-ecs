@@ -1,18 +1,23 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, InstructionData};
+use anchor_lang::system_program::ID as system_program;
 use dominarisystems::state::RelevantComponentKeys;
+use ecs::account::Entity;
 use solana_client_wasm::WasmClient;
-
+use solana_sdk::instruction::Instruction;
+use rand::Rng;
+use crate::util::fetch_account;
 use crate::world::World;
-
 
 pub struct Dominari {
     pub client: WasmClient,
+    pub world: Pubkey,
 }
 
 impl Dominari {
-    pub fn new(rpc: &str) -> Self {
+    pub fn new(rpc: &str, world: Pubkey) -> Self {
         return Dominari {
-            client: WasmClient::new(rpc)
+            client: WasmClient::new(rpc),
+            world,
         }
     }
 
@@ -20,6 +25,79 @@ impl Dominari {
         Pubkey::find_program_address(&[b"System_Signer"], &dominarisystems::id()).0
     }
 
+    pub async fn init_map(&self, payer:Pubkey, instance:u64, max_x:u8, max_y:u8) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0;
+        let universe = ecs::id();
+        
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            world_program.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            dominarisystems::id().to_bytes().as_ref()
+        ], &world_program).0;
+
+        let mut rng = rand::thread_rng();
+        let entity_id:u64 = rng.gen();
+        println!("Map Entity ID: {:#}", entity_id);
+
+        let map_entity = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            entity_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ], &dominarisystems::id()).0;
+
+        vec![Instruction{
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::SystemInitMap {
+                payer,
+                system_program,
+                system_signer,
+                world_config,
+                world_program,
+                universe,
+                system_registration,
+                world_instance,
+                map_entity,
+                instance_index
+            }.to_account_metas(Some(true)),
+            data: dominarisystems::instruction::SystemInitalizeMap {
+                entity_id,
+                max_x,
+                max_y,
+            }.data()
+        }]
+    }
+
+    pub async fn get_map_by_instance(&self, instance:u64) -> Entity {
+
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            self.world.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let map_entity = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            instance.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        fetch_account(&self.client, &map_entity).await.unwrap()
+    } 
 }
 
 pub struct ComponentSchema {

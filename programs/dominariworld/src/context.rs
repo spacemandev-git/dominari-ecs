@@ -85,7 +85,7 @@ pub struct RegisterComponent<'info>{
             schema.as_bytes(),
         ],
         bump,
-        space=8+STRING_MAX_SIZE
+        space=8+(STRING_MAX_SIZE as usize)
     )]
     pub component: Account<'info, ComponentSchema>,
 

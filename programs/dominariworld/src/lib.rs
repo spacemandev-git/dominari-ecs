@@ -97,7 +97,7 @@ pub mod dominariworld {
         Ok(())
     }
 
-    pub fn mint_entity(ctx:Context<MintEntity>) -> Result<()> {
+    pub fn mint_entity(ctx:Context<MintEntity>, entity_id: u64) -> Result<()> {
         let accounts = ecs::cpi::accounts::MintEntity {
             entity: ctx.accounts.entity.to_account_info(),
             payer: ctx.accounts.payer.to_account_info(),
@@ -115,7 +115,7 @@ pub mod dominariworld {
             ctx.accounts.universe.to_account_info(),
             accounts,
             signer_seeds
-        ))?;
+        ), entity_id)?;
 
         Ok(())
     }

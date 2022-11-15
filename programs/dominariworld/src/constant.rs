@@ -1,1 +1,1 @@
-pub const STRING_MAX_SIZE:usize = 256;
+pub const STRING_MAX_SIZE:u64 = 256;
