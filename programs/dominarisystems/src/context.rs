@@ -109,13 +109,22 @@ pub struct SystemInitMap<'info> {
         bump,
     )]
     pub system_signer: Account<'info, SystemConfig>,
+
+    /// CHECK: Signing account for DM Worlds
     
+    #[account(
+        seeds = [
+            b"world_signer",
+        ],
+        bump,
+        seeds::program = world_instance.world.key()
+    )]
     pub world_config: Account<'info, WorldConfig>,
 
     pub world_program: Program<'info, Dominariworld>,
     pub universe: Program<'info, Ecs>, 
 
-    pub system_registration: Account<'info, SystemRegistration>,
+    pub system_registration: Box<Account<'info, SystemRegistration>>,
     pub world_instance: Account<'info, WorldInstance>,    
 
     /// CHECK: Initalized through CPI
@@ -130,9 +139,9 @@ pub struct SystemInitMap<'info> {
             world_instance.key().as_ref()
         ],
         bump,
-        space=8+32+8
+        space=8+32+4+4+4+4
     )]
-    pub instance_index: Account<'info, InstanceIndex>,
+    pub instance_index: Box<Account<'info, InstanceIndex>>,
 }
 
 #[derive(Accounts)]

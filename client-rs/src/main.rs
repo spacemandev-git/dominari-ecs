@@ -9,7 +9,7 @@ use register::*;
 
 mod map;
 
-const RPC_URL:&str = "http://64.227.14.242:8899";
+pub const RPC_URL:&str = "http://64.227.14.242:8899";
 
 pub struct Client {
     pub id01: Keypair,
@@ -66,6 +66,8 @@ pub async fn register(client: &Client) {
     // Register Dominari Systems for all Components
     register_system_for_component(&client, instance).await;
 
+    // Register Action Bundle
+    init_dominari_action_bundle(client).await;
 }
 
 pub async fn map(client: &Client, instance:u64, max_x:u8, max_y:u8) {

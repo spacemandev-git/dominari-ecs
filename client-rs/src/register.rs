@@ -70,10 +70,23 @@ pub async fn register_system_for_component(client: &Client, instance:u64) {
     // Register Components for System Tx
     println!("Adding components to Dominari registration...", );
     let mut add_comp_tx = Transaction::new_with_payer(
-        client.world.add_components_to_system_registration(ComponentSchema::new(&client.world).get_all_component_keys(), client.dominari.get_system_signer(), instance, client.id01.pubkey()).await.as_slice(),
+        client.world.add_components_to_system_registration(ComponentSchema::new(&client.world.pubkey).get_all_component_keys(), client.dominari.get_system_signer(), instance, client.id01.pubkey()).await.as_slice(),
         Some(&client.id01.pubkey())
     );
     add_comp_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
     client.rpc.send_and_confirm_transaction(&add_comp_tx).await.unwrap();
     println!("Dominari registered for all components!", );
+}
+
+
+pub async fn init_dominari_action_bundle(client: &Client) {
+    //  Register Dominari Game
+    println!("Registering Dominari Action Bundle...");
+    let mut init_tx = Transaction::new_with_payer(
+        client.dominari.init_action_bundle(client.id01.pubkey()).as_slice(),
+        Some(&client.id01.pubkey())
+    );
+    init_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
+    client.rpc.send_and_confirm_transaction(&init_tx).await.unwrap();
+    println!("Dominari action bundle registered!");
 }

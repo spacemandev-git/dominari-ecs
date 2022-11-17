@@ -6,7 +6,6 @@ use solana_client_wasm::WasmClient;
 use solana_sdk::instruction::Instruction;
 use rand::Rng;
 use crate::util::fetch_account;
-use crate::world::World;
 
 pub struct Dominari {
     pub client: WasmClient,
@@ -25,12 +24,29 @@ impl Dominari {
         Pubkey::find_program_address(&[b"System_Signer"], &dominarisystems::id()).0
     }
 
-    pub async fn init_map(&self, payer:Pubkey, instance:u64, max_x:u8, max_y:u8) -> Vec<Instruction> {
+    pub fn init_action_bundle(&self, payer:Pubkey) -> Vec<Instruction> {
+        let component_keys = (ComponentSchema::new(&self.world)).get_relevant_component_keys();
+
+        vec![Instruction {
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::Initialize {
+                payer,
+                system_program,
+                system_signer: self.get_system_signer()
+            }.to_account_metas(None),
+            data: dominarisystems::instruction::Initialize {
+                component_keys,
+            }.data()
+        }]
+    }
+
+    pub fn init_map(&self, payer:Pubkey, instance:u64, max_x:u8, max_y:u8) -> Vec<Instruction> {
         let world_program = self.world;
         let system_signer = self.get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0;
+
         let universe = ecs::id();
         
         let world_instance = Pubkey::find_program_address(&[
@@ -42,12 +58,11 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            dominarisystems::id().to_bytes().as_ref()
+            self.get_system_signer().as_ref()
         ], &world_program).0;
 
         let mut rng = rand::thread_rng();
         let entity_id:u64 = rng.gen();
-        println!("Map Entity ID: {:#}", entity_id);
 
         let map_entity = Pubkey::find_program_address(&[
             b"Entity".as_ref(),
@@ -82,22 +97,21 @@ impl Dominari {
         }]
     }
 
-    pub async fn get_map_by_instance(&self, instance:u64) -> Entity {
-
+    pub async fn get_instance_index(&self, instance:u64) -> dominarisystems::account::InstanceIndex {
         let world_instance = Pubkey::find_program_address(&[
             b"World".as_ref(),
             self.world.as_ref(),
             instance.to_be_bytes().as_ref()
         ], &ecs::id()).0;
-
-        let map_entity = Pubkey::find_program_address(&[
-            b"Entity".as_ref(),
-            instance.to_be_bytes().as_ref(),
+        
+        let pubkey = Pubkey::find_program_address(&[
+            b"Instance_Index".as_ref(),
             world_instance.as_ref()
-        ], &ecs::id()).0;
+        ], &dominarisystems::id()).0;
 
-        fetch_account(&self.client, &map_entity).await.unwrap()
-    } 
+        fetch_account(&self.client, &pubkey).await.unwrap()
+    }
+
 }
 
 pub struct ComponentSchema {
@@ -105,7 +119,7 @@ pub struct ComponentSchema {
 }
 
 impl ComponentSchema {
-    pub fn new(world:&World) -> Self {
+    pub fn new(world:&Pubkey) -> Self {
         let mut schemas = bimap::BiMap::<String, Pubkey>::new();
         let urls =  ComponentSchema::get_all_schema_urls();
 
@@ -116,8 +130,8 @@ impl ComponentSchema {
         return ComponentSchema { schemas, }
     }
 
-    pub fn get_world_component(world:&World, schema: &String) -> Pubkey {
-        Pubkey::find_program_address(&[schema.as_bytes().as_ref()], &world.pubkey).0
+    pub fn get_world_component(world:&Pubkey, schema: &String) -> Pubkey {
+        Pubkey::find_program_address(&[schema.as_bytes().as_ref()], &world).0
     }
 
     pub fn get_component_pubkey(&self, schema: &String) -> &Pubkey {
@@ -138,7 +152,7 @@ impl ComponentSchema {
             "value.json".to_string(),
             "occupant.json".to_string(),
             "player_stats.json".to_string(),
-            "last_used_slot.json".to_string(),
+            "last_used.json".to_string(),
             "rank.json".to_string(),
             "range.json".to_string(),
             "drop_table.json".to_string(),

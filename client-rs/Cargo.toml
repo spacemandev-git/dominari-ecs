@@ -9,6 +9,7 @@ edition = "2021"
 dominari = { path="../sdk/dominari" }
 shellexpand = "2.1.0"
 #futures = "0.3.25"
-tokio = { version = "1.21.2", features=["full"]}
+tokio = { version = "1.14.1", features=["full"]}
 solana-client-wasm = { git = "https://github.com/spacemandev-git/solana-playground" }
 solana-transaction-status = "1.10.34"
+solana-client = "1.10.34"

@@ -35,7 +35,7 @@ pub struct RegisterWorldInstance <'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(entity_id:u64)]
+#[instruction(entity_id:u64, components: Vec<SerializedComponent>)]
 pub struct MintEntity<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -46,7 +46,7 @@ pub struct MintEntity<'info>{
     #[account(
         init,
         payer=payer,
-        space=8+8+8+32+8, //It is expected this will get Realloc'd every time a component is added
+        space=8+8+8+32+4+compute_comp_arr_max_size(&components), //It is expected this will get Realloc'd every time a component is added
         seeds = [
             b"Entity",
             entity_id.to_be_bytes().as_ref(),
@@ -54,7 +54,7 @@ pub struct MintEntity<'info>{
         ],
         bump,
     )]
-    pub entity: Account<'info, Entity>,
+    pub entity: Box<Account<'info, Entity>>,
 
     // Only the Entity's World can make changes to the Entity
     #[account(
@@ -169,7 +169,7 @@ pub struct RemoveEntity<'info>{
 pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize {
     let mut max_size:usize = 0;
     for comp in components {
-        max_size += comp.max_size as usize;
+        max_size += comp.max_size as usize + 76; //76 is for the 2 pubkeys and max_size value and empty vec in serialized comp itself
     }
     return max_size;
 }
@@ -178,7 +178,7 @@ pub fn get_removed_size(components: &Vec<SerializedComponent>, removed_component
     let mut removed_size:usize = 0;
     for comp in components.iter() {
         if removed_components.contains(&comp.component_key) {
-            removed_size += comp.max_size as usize;
+            removed_size += comp.max_size as usize + 76;
         }
     }
     return removed_size;

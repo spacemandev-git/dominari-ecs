@@ -19,6 +19,7 @@ use event::*;
 
 #[program]
 pub mod dominariworld {
+
     use super::*;
 
     pub fn initalize(ctx:Context<Initialize>, universe: Pubkey) -> Result<()> {
@@ -54,7 +55,7 @@ pub mod dominariworld {
             signer_seeds
         );
         
-        ecs::cpi::register_world(register_world_ctx, ctx.program_id.clone(), ctx.accounts.world_config.instances+1_u64)?;
+        ecs::cpi::register_world(register_world_ctx, ctx.program_id.key(), ctx.accounts.world_config.instances+1_u64)?;
         ctx.accounts.world_config.instances += 1; // basically the UUID for the instance
         ctx.accounts.instance_authority.instance = ctx.accounts.world_config.instances;
         ctx.accounts.instance_authority.authority = ctx.accounts.payer.key(); // fancier Worlds might have different governance setup for this
@@ -83,6 +84,7 @@ pub mod dominariworld {
 
     pub fn register_system(ctx: Context<RegisterSystem>) -> Result<()> {
         ctx.accounts.system_registration.system = ctx.accounts.system.key();
+        ctx.accounts.system_registration.instance = ctx.accounts.world_instance.instance;
 
         emit!(NewSystemRegistration {
             world_instance: ctx.accounts.world_instance.key(),
@@ -97,7 +99,8 @@ pub mod dominariworld {
         Ok(())
     }
 
-    pub fn mint_entity(ctx:Context<MintEntity>, entity_id: u64) -> Result<()> {
+    pub fn mint_entity(ctx:Context<MintEntity>, entity_id: u64, components: Vec<SerializedComponent>) -> Result<()> {
+        msg!("World minting entity");
         let accounts = ecs::cpi::accounts::MintEntity {
             entity: ctx.accounts.entity.to_account_info(),
             payer: ctx.accounts.payer.to_account_info(),
@@ -110,13 +113,13 @@ pub mod dominariworld {
             &[*ctx.bumps.get("world_config").unwrap()]
         ];
         let signer_seeds = &[world_signer_seeds];
-
+        
         ecs::cpi::mint_entity(CpiContext::new_with_signer(
             ctx.accounts.universe.to_account_info(),
             accounts,
             signer_seeds
-        ), entity_id)?;
-
+        ), entity_id, components)?;
+        
         Ok(())
     }
 

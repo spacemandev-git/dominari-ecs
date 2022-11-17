@@ -34,7 +34,10 @@ pub mod ecs {
         Ok(())
     }
 
-    pub fn mint_entity(ctx:Context<MintEntity>, entity_id:u64) -> Result<()> {
+    pub fn mint_entity(ctx:Context<MintEntity>, entity_id:u64, components: Vec<SerializedComponent>) -> Result<()> {
+        msg!("Entity ID: {:#}", entity_id);
+        msg!("Entity Acc: {}", ctx.accounts.entity.key());
+
         // Increment World Instance Entities
         ctx.accounts.world_instance.entities += 1;
 
@@ -42,7 +45,7 @@ pub mod ecs {
         ctx.accounts.entity.entity_id = entity_id;
         ctx.accounts.entity.world = ctx.accounts.world_instance.world.key();
         ctx.accounts.entity.instance = ctx.accounts.world_instance.instance;
-        ctx.accounts.entity.components = vec![];
+        ctx.accounts.entity.components = components;
 
         emit!(NewEntityMinted{
             world_instance: ctx.accounts.world_instance.key(),

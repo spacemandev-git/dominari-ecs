@@ -93,8 +93,7 @@ impl World {
                 instance_authority,
                 universe: ecs::id(),
             }.to_account_metas(Some(true)), // This will CPI into Universe program, so some of these accounts are signers
-            data: dominariworld::instruction::InstanceWorld {
-            }.data()
+            data: dominariworld::instruction::InstanceWorld {}.data()
         }]
     } 
     

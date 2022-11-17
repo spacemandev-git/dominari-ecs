@@ -125,7 +125,7 @@ pub struct RegisterSystem <'info> {
             system.key().as_ref()
         ],
         bump,
-        space=8+8+32+32
+        space=8+32+8+4
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -174,14 +174,19 @@ pub struct AddComponentsToSystemRegistration <'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(entity_id:u64, components:Vec<SerializedComponent>)]
 pub struct MintEntity<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
 
-    //Used to Sign Tx for the CPI
+    /// CHECK: Used to Sign Tx for the CPI
+    #[account(
+        seeds=[b"world_signer"],
+        bump,
+    )]
     pub world_config: Account<'info, WorldConfig>,
-
+    
     /// CHECK: Initalized via CPI
     #[account(mut)]
     pub entity: AccountInfo<'info>,
@@ -193,7 +198,7 @@ pub struct MintEntity<'info> {
     pub system: Signer<'info>,
     // All systems can make any entities they want
     #[account(
-        constraint = system_registration.system.key() == system.key()
+        constraint = system_registration.system.key() == system.key() && check_components_can_be_modified_by_system(&get_pubkeys_from_components(&components), &system_registration.components)
     )]
     pub system_registration: Account<'info, SystemRegistration>,
     pub universe: Program<'info, Ecs>,     
@@ -213,7 +218,7 @@ pub struct AddComponents<'info>{
         mut,
         constraint = entity.world.key() == program_id.key() && entity.instance == system_registration.instance
     )]
-    pub entity: Account<'info, Entity>,
+    pub entity: Box<Account<'info, Entity>>,
     
     pub system: Signer<'info>,
     
