@@ -1,11 +1,3 @@
-/*
-    -> Deploy & Register
-        - Deploy Universe, World, Systems
-        -> Initalize World with Universe
-        -> Register Components to Dominari World
-        -> Instance a World
-        -> Register DominariSystems for Each of the Registered Components
-*/
 
 use solana_client_wasm::{solana_sdk::{signer::Signer, transaction::Transaction, instruction::Instruction}};
 use dominari::dominari::ComponentSchema;
@@ -77,7 +69,6 @@ pub async fn register_system_for_component(client: &Client, instance:u64) {
     client.rpc.send_and_confirm_transaction(&add_comp_tx).await.unwrap();
     println!("Dominari registered for all components!", );
 }
-
 
 pub async fn init_dominari_action_bundle(client: &Client) {
     //  Register Dominari Game

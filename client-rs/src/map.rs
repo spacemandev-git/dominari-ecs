@@ -1,11 +1,5 @@
 /*
-    -> Setup Map
-    -> Instance a map of a given grid size
-        -> Create Empty Map Entity
-        -> Initalize Map Entity & Add Compnoents
-    -> Initalize X*Y Tiles
-        -> Create Empty Tile Entity
-        -> Initialize Tile(x,y) Entity & Add Components
+
 */
 
 use dominari::solana_sdk::{transaction::Transaction, signer::Signer};

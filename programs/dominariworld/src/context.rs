@@ -39,19 +39,6 @@ pub struct InstanceWorld<'info>{
     )]
     pub world_config: Account<'info, WorldConfig>,
 
-    /* 
-    #[account(
-        seeds=[
-            b"World",
-            program_id.key().as_ref(),
-            (world_config.instances+1_u64).to_be_bytes().as_ref()
-        ],
-        bump,
-        seeds::program = UniverseID,
-    )]
-    pub world_instance: Account<'info, WorldInstance>,
-    */
-    /// CHECK: Initalized in CPI call
     #[account(mut)]
     pub world_instance: AccountInfo<'info>,
     pub universe: Program<'info, Ecs>,

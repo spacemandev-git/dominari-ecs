@@ -14,8 +14,10 @@ no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
+sdk = ["dep:serde"]
 
 [dependencies]
 anchor-lang = "0.25.0"
 ecs = { path = "../ecs", features = ["cpi"]}
 dominariworld = { path = "../dominariworld", features = ["cpi"]}
+serde = { version = "1.0.147", optional=true }

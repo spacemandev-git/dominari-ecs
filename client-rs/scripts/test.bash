@@ -3,8 +3,16 @@
 # Deploy the programs
 ./scripts/deploy.bash
 
-# Initalize the programs
-cargo run register
+# Initalize the programs (init world, components, action bundle)
+cargo run initialize
+
+# Register blueprints
+cargo run blueprints blueprints/features
+cargo run blueprints blueprints/units
+cargo run blueprints blueprints/mods
+
+# Instance the world (1)
+cargo run instance
 
 # Setup 8x8 Map
-cargo run map 1 8 8
+cargo run map maps/01.toml

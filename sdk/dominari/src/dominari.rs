@@ -1,7 +1,8 @@
 use anchor_lang::{prelude::*, InstructionData};
 use anchor_lang::system_program::ID as system_program;
 use dominarisystems::state::RelevantComponentKeys;
-use ecs::account::Entity;
+use ecs::state::SerializedComponent;
+use serde::Deserialize;
 use solana_client_wasm::WasmClient;
 use solana_sdk::instruction::Instruction;
 use rand::Rng;
@@ -112,6 +113,32 @@ impl Dominari {
         fetch_account(&self.client, &pubkey).await.unwrap()
     }
 
+    pub fn get_blueprint_key(blueprint: &String) -> Pubkey {
+        Pubkey::find_program_address(&[
+            b"Blueprint",
+            blueprint.as_bytes().as_ref()
+        ], &dominarisystems::id()).0
+    }
+
+    pub async fn register_blueprint(&self,payer:Pubkey, name: String, components: Vec<SerializedComponent>) -> Vec<Instruction> {
+        let system_signer = self.get_system_signer();
+        
+        let blueprint = Dominari::get_blueprint_key(&name);
+
+        vec![Instruction {
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::RegisterBlueprint {
+                payer,
+                system_program,
+                system_config: system_signer,
+                blueprint
+            }.to_account_metas(None),
+            data: dominarisystems::instruction::RegisterBlueprint {
+                name,
+                components,
+            }.data()
+        }]
+    }
 }
 
 pub struct ComponentSchema {
@@ -144,24 +171,24 @@ impl ComponentSchema {
 
     pub fn get_all_schema_urls() -> Vec<String> {
         vec![
-            "metadata.json".to_string(),
-            "mapmeta.json".to_string(),
-            "location.json".to_string(),
-            "feature.json".to_string(),
-            "owner.json".to_string(),
-            "value.json".to_string(),
-            "occupant.json".to_string(),
-            "player_stats.json".to_string(),
-            "last_used.json".to_string(),
-            "rank.json".to_string(),
-            "range.json".to_string(),
-            "drop_table.json".to_string(),
-            "uses.json".to_string(),
-            "healing_power.json".to_string(),
-            "health.json".to_string(),
-            "damage.json".to_string(),
-            "troop_class.json".to_string(),
-            "active.json".to_string(),
+            "metadata".to_string(),
+            "mapmeta".to_string(),
+            "location".to_string(),
+            "feature".to_string(),
+            "owner".to_string(),
+            "value".to_string(),
+            "occupant".to_string(),
+            "player_stats".to_string(),
+            "last_used".to_string(),
+            "rank".to_string(),
+            "range".to_string(),
+            "drop_table".to_string(),
+            "uses".to_string(),
+            "healing_power".to_string(),
+            "health".to_string(),
+            "damage".to_string(),
+            "troop_class".to_string(),
+            "active".to_string(),
         ]
     }
 
@@ -172,25 +199,49 @@ impl ComponentSchema {
 
     pub fn get_relevant_component_keys(&self) -> dominarisystems::state::RelevantComponentKeys {
         RelevantComponentKeys {
-            metadata: *self.get_component_pubkey(&"metadata.json".to_string()),
-            mapmeta: *self.get_component_pubkey(&"mapmeta.json".to_string()),
-            location: *self.get_component_pubkey(&"location.json".to_string()),
-            feature: *self.get_component_pubkey(&"feature.json".to_string()),
-            owner: *self.get_component_pubkey(&"owner.json".to_string()),
-            value: *self.get_component_pubkey(&"value.json".to_string()),
-            occupant: *self.get_component_pubkey(&"occupant.json".to_string()),
-            player_stats: *self.get_component_pubkey(&"player_stats.json".to_string()),
-            last_used: *self.get_component_pubkey(&"last_used.json".to_string()),
-            rank: *self.get_component_pubkey(&"rank.json".to_string()),
-            range: *self.get_component_pubkey(&"range.json".to_string()),
-            drop_table: *self.get_component_pubkey(&"drop_table.json".to_string()),
-            uses: *self.get_component_pubkey(&"uses.json".to_string()),
-            healing_power: *self.get_component_pubkey(&"healing_power.json".to_string()),
-            health: *self.get_component_pubkey(&"health.json".to_string()),
-            damage: *self.get_component_pubkey(&"damage.json".to_string()),
-            troop_class: *self.get_component_pubkey(&"troop_class.json".to_string()),
-            active: *self.get_component_pubkey(&"active.json".to_string())
+            metadata: *self.get_component_pubkey(&"metadata".to_string()),
+            mapmeta: *self.get_component_pubkey(&"mapmeta".to_string()),
+            location: *self.get_component_pubkey(&"location".to_string()),
+            feature: *self.get_component_pubkey(&"feature".to_string()),
+            owner: *self.get_component_pubkey(&"owner".to_string()),
+            value: *self.get_component_pubkey(&"value".to_string()),
+            occupant: *self.get_component_pubkey(&"occupant".to_string()),
+            player_stats: *self.get_component_pubkey(&"player_stats".to_string()),
+            last_used: *self.get_component_pubkey(&"last_used".to_string()),
+            rank: *self.get_component_pubkey(&"rank".to_string()),
+            range: *self.get_component_pubkey(&"range".to_string()),
+            drop_table: *self.get_component_pubkey(&"drop_table".to_string()),
+            uses: *self.get_component_pubkey(&"uses".to_string()),
+            healing_power: *self.get_component_pubkey(&"healing_power".to_string()),
+            health: *self.get_component_pubkey(&"health".to_string()),
+            damage: *self.get_component_pubkey(&"damage".to_string()),
+            troop_class: *self.get_component_pubkey(&"troop_class".to_string()),
+            active: *self.get_component_pubkey(&"active".to_string())
         }
     }
     
 }
+
+#[derive(Deserialize, Debug)]
+pub struct BlueprintConfig {
+    pub metadata: Option<dominarisystems::component::ComponentMetadata>,
+    pub mapmeta: Option<dominarisystems::component::ComponentMapMeta>,
+    pub location: Option<dominarisystems::component::ComponentLocation>,
+    pub feature: Option<dominarisystems::component::ComponentFeature>,
+    pub owner: Option<dominarisystems::component::ComponentOwner>,
+    pub value: Option<dominarisystems::component::ComponentValue>,
+    pub occupant: Option<dominarisystems::component::ComponentOccupant>,
+    pub player_stats: Option<dominarisystems::component::ComponentPlayerStats>,
+    pub last_used: Option<dominarisystems::component::ComponentLastUsed>,
+    pub rank: Option<dominarisystems::component::ComponentRank>,
+    pub range: Option<dominarisystems::component::ComponentRange>,
+    pub drop_table: Option<dominarisystems::component::ComponentDropTable>,
+    pub uses: Option<dominarisystems::component::ComponentUses>,
+    pub healing_power: Option<dominarisystems::component::ComponentHealingPower>,
+    pub health: Option<dominarisystems::component::ComponentHealth>,
+    pub damage: Option<dominarisystems::component::ComponentDamage>,
+    pub troop_class: Option<dominarisystems::component::ComponentTroopClass>,
+    pub active: Option<dominarisystems::component::ComponentActive>,
+}
+
+pub use dominarisystems::component::*;

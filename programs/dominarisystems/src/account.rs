@@ -7,7 +7,7 @@ use crate::state::*;
 #[account]
 pub struct SystemConfig {
     pub authority: Pubkey,
-    pub components: RelevantComponentKeys
+    pub components: RelevantComponentKeys,
 }
 
 /**
@@ -15,7 +15,7 @@ pub struct SystemConfig {
  */
 #[account]
 pub struct Blueprint {
-    pub entity_name: String, // Max Size 128 Bytes
+    pub name: String,
     pub components: Vec<SerializedComponent>
 }
 

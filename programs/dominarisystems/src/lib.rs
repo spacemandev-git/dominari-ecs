@@ -34,8 +34,8 @@ pub mod dominarisystems {
         Ok(())
     }
 
-    pub fn register_blueprint(ctx:Context<RegisterBlueprint>, components: Vec<SerializedComponent>, entity_name: String) -> Result<()> {
-        ctx.accounts.blueprint.entity_name = entity_name;
+    pub fn register_blueprint(ctx:Context<RegisterBlueprint>, name:String, components: Vec<SerializedComponent>) -> Result<()> {
+        ctx.accounts.blueprint.name = name;
         ctx.accounts.blueprint.components = components;
         Ok(())
     }
@@ -71,7 +71,6 @@ pub mod dominarisystems {
         }.try_to_vec().unwrap();
         components.push(SerializedComponent { 
             component_key: ctx.accounts.system_signer.components.metadata.key(), 
-            world: ctx.accounts.world_instance.key(), 
             max_size: STRING_MAX_SIZE + STRING_MAX_SIZE + 32, 
             data:  metadata_component
         });
@@ -79,11 +78,10 @@ pub mod dominarisystems {
         let mapmeta_component = ComponentMapMeta {
             max_x,
             max_y,
-            play_phase: false
+            play_phase: PlayPhase::Lobby
         }.try_to_vec().unwrap();
         components.push(SerializedComponent { 
             component_key: ctx.accounts.system_signer.components.mapmeta.key(), 
-            world: ctx.accounts.world_instance.key(), 
             max_size: 1 + 1 + 1, 
             data: mapmeta_component 
         });

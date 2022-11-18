@@ -11,3 +11,6 @@ impl Universe {
         }
     }
 }
+
+
+pub use ecs::state::SerializedComponent;

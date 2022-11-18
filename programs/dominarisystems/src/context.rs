@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::account::*;
+use crate::constant::*;
+
 use ecs::{
     state::SerializedComponent, 
     account::WorldInstance,
@@ -27,26 +29,26 @@ pub struct Initialize <'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(components: Vec<SerializedComponent>, entity_name: String)]
+#[instruction(name:String, components: Vec<SerializedComponent>)]
 pub struct RegisterBlueprint <'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
 
     #[account(
-        constraint = system_signer.authority.key() == payer.key()
+        constraint = system_config.authority.key() == payer.key()
     )]
-    pub system_signer: Account<'info, SystemConfig>,
+    pub system_config: Account<'info, SystemConfig>,
 
     #[account(
         init,
         payer=payer,
         seeds=[
             b"Blueprint",
-            entity_name.as_bytes()
+            name.as_bytes().as_ref()
         ],
         bump,
-        space=8+128+compute_comp_arr_max_size(&components)
+        space=8 + STRING_MAX_SIZE as usize + compute_comp_arr_max_size(&components)
     )]
     pub blueprint: Account<'info, Blueprint>,
 }
@@ -78,7 +80,7 @@ pub struct SystemRegisterPlayer <'info> {
     #[account(
         seeds=[
             b"Blueprint",
-            b"Starting_Card",
+            b"starting_card",
         ],
         bump,
     )]
@@ -186,7 +188,7 @@ pub struct SystemInitTile<'info> {
 pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize {
     let mut max_size:usize = 0;
     for comp in components {
-        max_size += comp.max_size as usize;
+        max_size += comp.max_size as usize + 44;
     }
     return max_size;
 }

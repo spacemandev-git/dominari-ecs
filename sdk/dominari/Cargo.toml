@@ -9,9 +9,12 @@ edition = "2021"
 anchor-lang = "0.25.0"
 solana-client-wasm = { git = "https://github.com/spacemandev-git/solana-playground" }
 solana-sdk = "1.10.34"
-ecs = { path = "../../programs/ecs", features = ["no-entrypoint"]}
-dominariworld = { path = "../../programs/dominariworld", features = ["no-entrypoint"]} 
-dominarisystems = { path = "../../programs/dominarisystems", features = ["no-entrypoint"]}
+ecs = { path = "../../programs/ecs", features = ["no-entrypoint", "sdk"]}
+dominariworld = { path = "../../programs/dominariworld", features = ["no-entrypoint", "sdk"]} 
+dominarisystems = { path = "../../programs/dominarisystems", features = ["no-entrypoint", "sdk"]}
 borsh = "0.9.3"
 bimap = "0.6.2"
 rand = "0.8.5"
+toml = "0.5.9"
+serde = "1.0.147"
+getrandom = { version = "0.2", features = ["js"] }
