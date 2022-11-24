@@ -60,25 +60,25 @@ impl MaxSize for ComponentLocation {
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentFeature{
-    pub feature_id: Pubkey // Entity ID
+    pub feature_id: Option<Pubkey> // Entity ID
 }
 
 impl MaxSize for ComponentFeature {
     fn get_max_size() -> u64 {
-        return 32
+        return 1+32
     }
 }
 
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentOwner{
-    pub owner: Pubkey,    // Keypair for Tile Owner
-    pub player: Pubkey    // Entity ID for Tile Owner's Player
+    pub owner: Option<Pubkey>,    // Keypair for Tile Owner
+    pub player: Option<Pubkey>    // Entity ID for Tile Owner's Player
 }
 
 impl MaxSize for ComponentOwner {
     fn get_max_size() -> u64 {
-        return 32+32
+        return 1+32+1+32
     }
 }
 
@@ -98,12 +98,12 @@ impl MaxSize for ComponentValue {
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentOccupant{
-    pub occupant_id: Pubkey
+    pub occupant_id: Option<Pubkey>
 }
 
 impl MaxSize for ComponentOccupant {
     fn get_max_size() -> u64 {
-        return 32
+        return 1+32
     }
 }
 
@@ -258,5 +258,17 @@ pub struct ComponentActive{
 impl MaxSize for ComponentActive {
     fn get_max_size() -> u64 {
         return 1
+    }
+}
+
+#[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct ComponentCost{
+    pub lamports: u64,
+}
+
+impl MaxSize for ComponentCost {
+    fn get_max_size() -> u64 {
+        return 8
     }
 }

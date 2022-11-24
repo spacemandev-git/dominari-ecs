@@ -11,8 +11,8 @@ pub mod state;
 //use account::*;
 use context::*;
 use constant::*;
-//use error::*;
-//use event::*;
+use error::*;
+use event::*;
 use component::*;
 use state::*;
 
@@ -22,7 +22,6 @@ declare_id!("3YdayPtujByJ1g1DWEUh7vpg78gZL49FWyD5rDGyof9T");
 
 #[program]
 pub mod dominarisystems {
-
     use super::*;
 
     /**
@@ -48,7 +47,7 @@ pub mod dominarisystems {
         let signer_seeds = &[system_signer_seeds];
 
         let mint_entity_ctx = CpiContext::new_with_signer(
-            ctx.accounts.universe.to_account_info(),
+            ctx.accounts.world_program.to_account_info(),
             dominariworld::cpi::accounts::MintEntity{
                 entity: ctx.accounts.map_entity.to_account_info(),
                 payer: ctx.accounts.payer.to_account_info(),
@@ -71,7 +70,7 @@ pub mod dominarisystems {
         }.try_to_vec().unwrap();
         components.push(SerializedComponent { 
             component_key: ctx.accounts.system_signer.components.metadata.key(), 
-            max_size: STRING_MAX_SIZE + STRING_MAX_SIZE + 32, 
+            max_size: ComponentMetadata::get_max_size(), 
             data:  metadata_component
         });
 
@@ -82,7 +81,7 @@ pub mod dominarisystems {
         }.try_to_vec().unwrap();
         components.push(SerializedComponent { 
             component_key: ctx.accounts.system_signer.components.mapmeta.key(), 
-            max_size: 1 + 1 + 1, 
+            max_size: ComponentMapMeta::get_max_size(), 
             data: mapmeta_component 
         });
 
@@ -93,20 +92,69 @@ pub mod dominarisystems {
         Ok(())
     }
 
-    /*
-     * Security Concern: There's no way to check if the Tile already exists
-     * So it's up the caller of the program to make sure duplicates don't get created
-     
-    pub fn system_init_tile(ctx:Context<SystemInitTile>, entity_id:u64, x:u8, y:u8) -> Result<()> {
+    pub fn system_init_tile(ctx:Context<SystemInitTile>, entity_id:u64, x:u8, y:u8, cost:u64) -> Result<()> {
+        // Tile can only be instanced by Admin
+        // So we can trust in the input
+
+        // Tile has Metadata, Location, Feature, Owner and Cost components
+        let mut components: Vec<SerializedComponent> = vec![];
+        let metadata = ComponentMetadata {
+            name: format!("Tile ({x}, {y})"),
+            entity_type: "Tile".to_string(),
+            world_instance: ctx.accounts.world_instance.key(),
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent { 
+            component_key: ctx.accounts.system_signer.components.metadata.key(),
+            max_size: ComponentMetadata::get_max_size(),
+            data: metadata
+        });
+
+        let location = ComponentLocation {
+            x,
+            y,
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent { 
+            component_key: ctx.accounts.system_signer.components.location.key(),
+            max_size: ComponentLocation::get_max_size(),
+            data: location
+        });
+
+        let feature = ComponentFeature {
+            feature_id: None,
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent { 
+            component_key: ctx.accounts.system_signer.components.feature.key(),
+            max_size: ComponentFeature::get_max_size(),
+            data: feature
+        });
+
+        let owner = ComponentOwner {
+            owner: Some(ctx.accounts.payer.key()),
+            player: None,
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent { 
+            component_key: ctx.accounts.system_signer.components.owner.key(),
+            max_size: ComponentOwner::get_max_size(),
+            data: owner
+        });
+
+        let cost_component = ComponentCost {
+            lamports: cost,
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent { 
+            component_key: ctx.accounts.system_signer.components.cost.key(),
+            max_size: ComponentCost::get_max_size(),
+            data: cost_component
+        });
+
         let system_signer_seeds:&[&[u8]] = &[
             b"System_Signer",
             &[*ctx.bumps.get("system_signer").unwrap()]
         ];
         let signer_seeds = &[system_signer_seeds];
 
-        // Mint Map Entity
-        let mint_ctx = CpiContext::new_with_signer(
-            ctx.accounts.universe.to_account_info(),
+        let mint_entity_ctx = CpiContext::new_with_signer(
+            ctx.accounts.world_program.to_account_info(),
             dominariworld::cpi::accounts::MintEntity{
                 entity: ctx.accounts.tile_entity.to_account_info(),
                 payer: ctx.accounts.payer.to_account_info(),
@@ -119,102 +167,76 @@ pub mod dominarisystems {
             },
             signer_seeds
         );
-        dominariworld::cpi::mint_entity(mint_ctx, entity_id)?;
 
-        let mut components: Vec<SerializedComponent> = vec![];
+        dominariworld::cpi::mint_entity(mint_entity_ctx, entity_id, components)?;
+        ctx.accounts.instance_index.tiles.push(ctx.accounts.tile_entity.key());
+        Ok(())
+    }
 
-        // Tile has Metadata, Location, Feature, Owner, Occupant Components
+
+    
+    pub fn system_instance_feature(ctx:Context<SystemInstanceFeature>, entity_id: u64) -> Result<()> {
+        // Check to make sure tile can be modified by payer
+        let tile_owner_component = ctx.accounts.tile_entity.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.owner.key()).unwrap();
+        let tile_owner:ComponentOwner = ComponentOwner::try_from_slice(&tile_owner_component.data.as_slice()).unwrap();
+        if tile_owner.owner.unwrap().key() != ctx.accounts.payer.key() {
+            return err!(ComponentErrors::InvalidOwner)
+        }
+
+        // TODO: Check Blueprint 'cost' component and transfer that fee to build the Feature
+
+        // Create Feature entity
+        let mut components = vec![];
+        // Feature has Metadata, Location, Owner, Active, and ..Blueprint Components
         let metadata_component = ComponentMetadata {
-            name: format!("Tile ({:#}, {:#})", x, y),
-            entity_type: "Tile".to_string(),
+            name: ctx.accounts.blueprint.name.clone(),
+            entity_type: "Feature".to_string(),
             world_instance: ctx.accounts.world_instance.key(),
         }.try_to_vec().unwrap();
         components.push(SerializedComponent { 
             component_key: ctx.accounts.system_signer.components.metadata.key(), 
-            world: ctx.accounts.world_instance.key(), 
-            max_size: STRING_MAX_SIZE + STRING_MAX_SIZE + 32, 
-            data: metadata_component
-        });        
+            max_size: ComponentMetadata::get_max_size(), 
+            data:  metadata_component
+        });
+        // Just copy the Tile Location component
+        let tile_location = ctx.accounts.tile_entity.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.location.key()).unwrap();
+        components.push(tile_location.clone());
         
-        let location_component = ComponentLocation {
-            x,
-            y
+        let owner = ComponentOwner {
+            owner: tile_owner.owner,
+            player: None,
         }.try_to_vec().unwrap();
         components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.location.key(), 
-            world: ctx.accounts.world_instance.key(), 
-            max_size: STRING_MAX_SIZE + STRING_MAX_SIZE + 32, 
-            data: location_component
+            component_key: ctx.accounts.system_signer.components.owner.key(),
+            max_size: ComponentOwner::get_max_size(),
+            data: owner
         });
 
-        let feature_component = ComponentFeature {
-            feature_id: Default::default() // Empty pubkey
+        let active = ComponentActive {
+            active: true
         }.try_to_vec().unwrap();
         components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.feature.key(), 
-            world: ctx.accounts.world_instance.key(), 
-            max_size: 32, 
-            data: feature_component
+            component_key: ctx.accounts.system_signer.components.active.key(),
+            max_size: ComponentActive::get_max_size(),
+            data: active
         });
 
-        let occupant_component = ComponentOccupant {
-            occupant_id: Default::default() //empty pubkey
-        }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.occupant.key(), 
-            world: ctx.accounts.world_instance.key(), 
-            max_size: 32, 
-            data: occupant_component
-        });
+        components.extend(ctx.accounts.blueprint.components.clone());
 
-        let owner_component = ComponentOwner {
-            player: Default::default(),
-            owner: Default::default() //empty pubkey
-        }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.occupant.key(), 
-            world: ctx.accounts.world_instance.key(), 
-            max_size: 32 + 32, 
-            data: owner_component
-        });
+        //msg!("System Registration Components: {:?}", ctx.accounts.system_registration.components);
+        //msg!("Feature Components: {:?}", components);
 
-        // CPI into the World Program to Request Entity update
-        let accounts = dominariworld::cpi::accounts::AddComponents {
-            payer: ctx.accounts.payer.to_account_info(),
-            system_program: ctx.accounts.system_program.to_account_info(),
-            world_config: ctx.accounts.world_config.to_account_info(),
-            entity: ctx.accounts.tile_entity.to_account_info(),
-            system: ctx.accounts.system_signer.to_account_info(),
-            system_registration: ctx.accounts.system_registration.to_account_info(),
-            universe: ctx.accounts.universe.to_account_info()
-        };
 
-        dominariworld::cpi::req_add_component(CpiContext::new_with_signer(
-            ctx.accounts.world_program.to_account_info(), 
-            accounts, 
-            signer_seeds
-        ), components)?;
-
-        ctx.accounts.instance_index.tiles.push(ctx.accounts.tile_entity.key());
-        
-        Ok(())
-    }
-    */
-    /*
-     * Players don't have blueprints cause they are largely unique
-     
-    pub fn system_register_player(ctx:Context<SystemRegisterPlayer>, entity_id:u64, player_name:String) -> Result<()> {
         let system_signer_seeds:&[&[u8]] = &[
             b"System_Signer",
             &[*ctx.bumps.get("system_signer").unwrap()]
         ];
         let signer_seeds = &[system_signer_seeds];
 
-        // Mint Map Entity
-        let mint_ctx = CpiContext::new_with_signer(
-            ctx.accounts.universe.to_account_info(),
+        let mint_entity_ctx = CpiContext::new_with_signer(
+            ctx.accounts.world_program.to_account_info(),
             dominariworld::cpi::accounts::MintEntity{
-                entity: ctx.accounts.player_entity.to_account_info(),
+                entity: ctx.accounts.feature_entity.to_account_info(),
                 payer: ctx.accounts.payer.to_account_info(),
                 system_program: ctx.accounts.system_program.to_account_info(),
                 world_instance: ctx.accounts.world_instance.to_account_info(),
@@ -226,56 +248,31 @@ pub mod dominarisystems {
             signer_seeds
         );
 
+        dominariworld::cpi::mint_entity(mint_entity_ctx, entity_id, components)?;
+        ctx.accounts.instance_index.features.push(ctx.accounts.feature_entity.key());
 
-        let mut components: Vec<SerializedComponent> = vec![];
+        // Modify the Tile Entity with the new Feature
+        let tile_feature_component = ctx.accounts.tile_entity.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.feature.key()).unwrap();
+        let mut tile_feature:ComponentFeature = ComponentFeature::try_from_slice(&tile_feature_component.data.as_slice()).unwrap();
+        tile_feature.feature_id = Some(ctx.accounts.feature_entity.key());
+        let data = tile_feature.try_to_vec().unwrap();
 
-        // Add Player Metadata
-        let metadata_component = ComponentMetadata {
-            name: player_name,
-            entity_type: "Player".to_string(), 
-            world_instance: ctx.accounts.world_instance.key()
-        }.try_to_vec().unwrap();
-        components.push(SerializedComponent {
-            component_key: ctx.accounts.system_signer.components.metadata.key(),
-            world: ctx.accounts.world_instance.world.key(),
-            max_size: STRING_MAX_SIZE + STRING_MAX_SIZE + 32,
-            data: metadata_component
-        });
+        //msg!("{}", ctx.accounts.system_signer.components.feature.key());
 
-        // Add Player Stats
-        let player_stats = ComponentPlayerStats {
-            score: 0_u64,
-            kills: 0_u64,
-            cards: vec![ctx.accounts.starting_card_blueprint.key()]
-        }.try_to_vec().unwrap();
-        components.push(SerializedComponent {
-            component_key: ctx.accounts.system_signer.components.player_stats.key(),
-            world: ctx.accounts.world_instance.world.key(),
-            max_size: 8 + 8 + 32,
-            data: player_stats
-        });
-        // CPI into the World Program to Request Entity update
-        let accounts = dominariworld::cpi::accounts::AddComponents {
-            payer: ctx.accounts.payer.to_account_info(),
-            system_program: ctx.accounts.system_program.to_account_info(),
-            world_config: ctx.accounts.world_config.to_account_info(),
-            entity: ctx.accounts.player_entity.to_account_info(),
-            system: ctx.accounts.system_signer.to_account_info(),
-            system_registration: ctx.accounts.system_registration.to_account_info(),
-            universe: ctx.accounts.universe.to_account_info()
-        };
-        
-        dominariworld::cpi::req_add_component(CpiContext::new_with_signer(
-            ctx.accounts.world_program.to_account_info(), 
-            accounts, 
+        let modify_tile_ctx = CpiContext::new_with_signer(
+            ctx.accounts.world_program.to_account_info(),
+            dominariworld::cpi::accounts::ModifyComponent {
+                world_config: ctx.accounts.world_config.to_account_info(),
+                entity: ctx.accounts.tile_entity.to_account_info(),
+                system: ctx.accounts.system_signer.to_account_info(),
+                system_registration: ctx.accounts.system_registration.to_account_info(),
+                universe: ctx.accounts.universe.to_account_info(),
+            },
             signer_seeds
-        ), components)?;
-
-        ctx.accounts.instance_index.map = ctx.accounts.player_entity.key();
-
+        );
+        dominariworld::cpi::req_modify_component(modify_tile_ctx, vec![ctx.accounts.system_signer.components.feature.key()], vec![data])?;
         Ok(())
     }
-    */
 
 }
 

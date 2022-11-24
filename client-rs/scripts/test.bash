@@ -11,7 +11,8 @@ cargo run blueprints blueprints/features
 cargo run blueprints blueprints/units
 cargo run blueprints blueprints/mods
 
-# Instance the world (1)
+
+# Instance the world
 cargo run instance
 
 # Setup 8x8 Map

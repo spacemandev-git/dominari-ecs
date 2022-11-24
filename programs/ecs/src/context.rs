@@ -47,7 +47,7 @@ pub struct MintEntity<'info>{
     #[account(
         init,
         payer=payer,
-        space=8+8+8+32+4+compute_comp_arr_max_size(&components), //It is expected this will get Realloc'd every time a component is added
+        space=8+8+8+32+32+4+compute_comp_arr_max_size(&components), //It is expected this will get Realloc'd every time a component is added
         seeds = [
             b"Entity",
             entity_id.to_be_bytes().as_ref(),
@@ -80,7 +80,7 @@ pub struct AddComponent<'info> {
         realloc = entity.to_account_info().data_len() + compute_comp_arr_max_size(&components),
         realloc::payer = payer,
         realloc::zero = true,
-        constraint = entity.world.key() == world_signer.key()
+        constraint = entity.world_signer.key() == world_signer.key()
     )]
     pub entity: Account<'info, Entity>,
 
@@ -107,7 +107,7 @@ pub struct RemoveComponent<'info> {
         realloc = entity.to_account_info().data_len() - get_removed_size(&entity.components, &removed_components),
         realloc::payer = benefactor,
         realloc::zero = false,
-        constraint = entity.world.key() == world_signer.key()
+        constraint = entity.world_signer.key() == world_signer.key()
     )]
     pub entity: Account<'info, Entity>,
 
@@ -127,7 +127,7 @@ pub struct RemoveComponent<'info> {
 pub struct ModifyComponent<'info> {
     #[account(
         mut,
-        constraint = entity.world.key() == world_signer.key()
+        constraint = entity.world_signer.key() == world_signer.key()
     )]
     pub entity: Account<'info, Entity>,
 
@@ -150,7 +150,7 @@ pub struct RemoveEntity<'info>{
     
     #[account(
         mut,
-        constraint = entity.world.key() == world_signer.key() && entity.components.len() == 0, // Can only delete empty Entities
+        constraint = entity.world_signer.key() == world_signer.key() && entity.components.len() == 0, // Can only delete empty Entities
         close = benefactor
     )]
     pub entity: Account<'info, Entity>,

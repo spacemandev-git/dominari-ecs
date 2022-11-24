@@ -39,6 +39,7 @@ pub struct InstanceWorld<'info>{
     )]
     pub world_config: Account<'info, WorldConfig>,
 
+    /// CHECK: Initialized via CPI
     #[account(mut)]
     pub world_instance: AccountInfo<'info>,
     pub universe: Program<'info, Ecs>,
@@ -199,6 +200,10 @@ pub struct AddComponents<'info>{
     pub system_program: Program<'info, System>,
 
     //Used to Sign Tx for the CPI
+    #[account(
+        seeds=[b"world_signer"],
+        bump,
+    )]
     pub world_config: Account<'info, WorldConfig>,
 
     #[account(
@@ -227,6 +232,10 @@ pub struct RemoveComponent<'info>{
     pub system_program: Program<'info, System>,
 
     //Used to Sign Tx for the CPI
+    #[account(
+        seeds=[b"world_signer"],
+        bump,
+    )]
     pub world_config: Account<'info, WorldConfig>,
 
     #[account(
@@ -251,6 +260,10 @@ pub struct RemoveComponent<'info>{
 #[instruction(components: Vec<Pubkey>, data:Vec<Vec<u8>>)]
 pub struct ModifyComponent<'info>{
     //Used to Sign Tx for the CPI
+    #[account(
+        seeds=[b"world_signer"],
+        bump,
+    )]
     pub world_config: Account<'info, WorldConfig>,
 
     #[account(
@@ -278,6 +291,10 @@ pub struct RemoveEntity<'info>{
     pub system_program: Program<'info, System>,
 
     //Used to Sign Tx for the CPI
+    #[account(
+        seeds=[b"world_signer"],
+        bump,
+    )]
     pub world_config: Account<'info, WorldConfig>,
 
     #[account(

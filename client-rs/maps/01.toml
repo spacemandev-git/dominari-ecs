@@ -1,27 +1,30 @@
+cost_per_tile = 1000
+
 [mapmeta]
 max_x = 8
 max_y = 8
+play_phase = "Lobby"
 
 # Not every tile is defined. 
 # If a tile is *not* defined, it's left as a blank tile
 # If a tile *is* defined, the blank tile is overwritten
 
-[[tiles]]
+[[features]]
 x=0
 y=0
 feature="healer"
 
-[[tiles]]
+[[features]]
 x=0
 y=8
 feature="healer"
 
-[[tiles]]
+[[features]]
 x=8
 y=8
 feature="healer"
 
-[[tiles]]
+[[features]]
 x=8
 y=0
 feature="healer"

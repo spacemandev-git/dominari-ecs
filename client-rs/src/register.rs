@@ -29,8 +29,9 @@ pub async fn init_components(client: &Client) {
             Some(&client.id01.pubkey())
         );
         tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
-        let sig = client.rpc.send_and_confirm_transaction(&tx).await.unwrap().to_string();    
-        println!("Component Registered: {sig}");
+        send_tx_async(client.rpc.clone(), tx.clone());
+        //let sig = client.rpc.send_and_confirm_transaction(&tx).await.unwrap().to_string();    
+        //println!("Component Registered: {sig}");
     }
     println!("Components after registration loop: {:#}", client.world.get_world_config().await.1.components);
 }

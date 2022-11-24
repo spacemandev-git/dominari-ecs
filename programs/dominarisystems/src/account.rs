@@ -29,6 +29,6 @@ pub struct InstanceIndex {
     pub map: Pubkey,
     pub tiles: Vec<Pubkey>,
     pub features: Vec<Pubkey>,
-    pub unit: Vec<Pubkey>,
-    pub player: Vec<Pubkey>,
+    pub units: Vec<Pubkey>,
+    pub players: Vec<Pubkey>,
 }

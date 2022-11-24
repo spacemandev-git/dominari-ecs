@@ -100,7 +100,6 @@ pub mod dominariworld {
     }
 
     pub fn mint_entity(ctx:Context<MintEntity>, entity_id: u64, components: Vec<SerializedComponent>) -> Result<()> {
-        msg!("World minting entity");
         let accounts = ecs::cpi::accounts::MintEntity {
             entity: ctx.accounts.entity.to_account_info(),
             payer: ctx.accounts.payer.to_account_info(),

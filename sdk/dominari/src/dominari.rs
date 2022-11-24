@@ -1,23 +1,30 @@
+use std::collections::HashMap;
+
 use anchor_lang::{prelude::*, InstructionData};
 use anchor_lang::system_program::ID as system_program;
 use dominarisystems::state::RelevantComponentKeys;
 use ecs::state::SerializedComponent;
 use serde::Deserialize;
 use solana_client_wasm::WasmClient;
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
 use rand::Rng;
-use crate::util::fetch_account;
+use crate::gamestate::GameState;
 
+#[derive(Clone)]
 pub struct Dominari {
     pub client: WasmClient,
     pub world: Pubkey,
+    pub state: HashMap<u64, GameState>, //maps instanceID to GameState Object
 }
+
 
 impl Dominari {
     pub fn new(rpc: &str, world: Pubkey) -> Self {
         return Dominari {
             client: WasmClient::new(rpc),
             world,
+            state: HashMap::new(),
         }
     }
 
@@ -98,19 +105,121 @@ impl Dominari {
         }]
     }
 
-    pub async fn get_instance_index(&self, instance:u64) -> dominarisystems::account::InstanceIndex {
+    pub fn init_tile(&self, payer:Pubkey, instance:u64, x:u8, y:u8, cost:u64) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0;
+
+        let universe = ecs::id();
+        
         let world_instance = Pubkey::find_program_address(&[
             b"World".as_ref(),
-            self.world.as_ref(),
+            world_program.as_ref(),
             instance.to_be_bytes().as_ref()
         ], &ecs::id()).0;
-        
-        let pubkey = Pubkey::find_program_address(&[
-            b"Instance_Index".as_ref(),
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            self.get_system_signer().as_ref()
+        ], &world_program).0;
+
+        let mut rng = rand::thread_rng();
+        let entity_id:u64 = rng.gen();
+
+        let tile_entity = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            entity_id.to_be_bytes().as_ref(),
             world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
         ], &dominarisystems::id()).0;
 
-        fetch_account(&self.client, &pubkey).await.unwrap()
+        vec![Instruction{
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::SystemInitTile {
+                payer,
+                system_program,
+                system_signer,
+                world_config,
+                world_program,
+                universe,
+                system_registration,
+                world_instance,
+                tile_entity,
+                instance_index
+            }.to_account_metas(Some(true)),
+            data: dominarisystems::instruction::SystemInitTile {
+                entity_id,
+                x,
+                y,
+                cost
+            }.data()
+        }]
+    }
+
+    pub fn init_feature(&self, payer:Pubkey, instance:u64, tile:Pubkey,  blueprint: Pubkey) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0;
+
+        let universe = ecs::id();
+        
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            world_program.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            self.get_system_signer().as_ref()
+        ], &world_program).0;
+
+        let mut rng = rand::thread_rng();
+        let entity_id:u64 = rng.gen();
+
+        let feature_entity = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            entity_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ], &dominarisystems::id()).0;
+
+        vec![
+        //ComputeBudgetInstruction::set_compute_unit_limit(1_400_000u32),    
+        Instruction{
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::SystemInstanceFeature {
+                payer,
+                system_program,
+                system_signer,
+                world_config,
+                world_program,
+                universe,
+                system_registration,
+                world_instance,
+                feature_entity,
+                blueprint,
+                tile_entity: tile,
+                instance_index
+            }.to_account_metas(Some(true)),
+            data: dominarisystems::instruction::SystemInstanceFeature {
+                entity_id,
+            }.data()
+        }]
     }
 
     pub fn get_blueprint_key(blueprint: &String) -> Pubkey {
@@ -139,8 +248,24 @@ impl Dominari {
             }.data()
         }]
     }
+
+    pub async fn build_gamestate(&mut self, instance:u64) -> &GameState {
+        self.state.insert(instance, GameState::new(self.client.clone(), self.world, instance));
+        self.get_mut_gamestate(instance).load_state().await;
+        self.get_gamestate(instance)
+    }
+
+    pub fn get_mut_gamestate(&mut self, instance:u64) -> &mut GameState {
+        self.state.get_mut(&instance).unwrap()
+    }
+
+    pub fn get_gamestate(&self, instance:u64) -> &GameState {
+        self.state.get(&instance).unwrap()
+    }
+    
 }
 
+#[derive(Clone, Debug)]
 pub struct ComponentSchema {
     pub schemas: bimap::BiMap<String, Pubkey>
 }
@@ -189,6 +314,7 @@ impl ComponentSchema {
             "damage".to_string(),
             "troop_class".to_string(),
             "active".to_string(),
+            "cost".to_string()
         ]
     }
 
@@ -216,7 +342,8 @@ impl ComponentSchema {
             health: *self.get_component_pubkey(&"health".to_string()),
             damage: *self.get_component_pubkey(&"damage".to_string()),
             troop_class: *self.get_component_pubkey(&"troop_class".to_string()),
-            active: *self.get_component_pubkey(&"active".to_string())
+            active: *self.get_component_pubkey(&"active".to_string()),
+            cost: *self.get_component_pubkey(&"cost".to_string()),
         }
     }
     
@@ -242,6 +369,7 @@ pub struct BlueprintConfig {
     pub damage: Option<dominarisystems::component::ComponentDamage>,
     pub troop_class: Option<dominarisystems::component::ComponentTroopClass>,
     pub active: Option<dominarisystems::component::ComponentActive>,
+    pub cost: Option<dominarisystems::component::ComponentCost>,
 }
 
 pub use dominarisystems::component::*;

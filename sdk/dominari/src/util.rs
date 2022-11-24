@@ -8,6 +8,20 @@ pub async fn fetch_account<T: AccountDeserialize>(client: &WasmClient, pubkey: &
     return result;
 }
 
+/**
+ * Makes the assumption that the accounts returned are in the same order as the keys passed in
+ * This is because the acocunts returned don't have the pubkey attached to them.
+ */
+pub async fn fetch_accounts<T: AccountDeserialize>(client: &WasmClient, pubkeys: &Vec<Pubkey>) -> Vec<(Pubkey,T)> {
+    let accounts = &client.get_multiple_accounts(pubkeys).await.unwrap();
+    let mut results = vec![];
+    for (i, account) in accounts.iter().enumerate() {
+        let result: Result<T> = deserialize_account(&account.as_ref().unwrap().data).await;
+        results.push((pubkeys.get(i).unwrap().clone(), result.unwrap()));
+    }
+    return results;
+}
+
 pub async fn deserialize_account<T: AccountDeserialize>(mut data: &[u8]) -> Result<T> {
     let result = T::try_deserialize(&mut data).map_err(Into::into);
     return result;

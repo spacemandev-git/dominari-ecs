@@ -15,7 +15,8 @@ pub struct WorldInstance {
 pub struct Entity {
     pub entity_id: u64,
     pub instance: u64,
-    pub world: Pubkey, // Acts as the Update Authority
+    pub world: Pubkey,
+    pub world_signer: Pubkey,
     pub components: Vec<SerializedComponent>,
 }
 

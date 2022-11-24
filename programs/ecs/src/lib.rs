@@ -41,6 +41,7 @@ pub mod ecs {
         // Set Entity Data
         ctx.accounts.entity.entity_id = entity_id;
         ctx.accounts.entity.world = ctx.accounts.world_instance.world.key();
+        ctx.accounts.entity.world_signer = ctx.accounts.world_signer.key();
         ctx.accounts.entity.instance = ctx.accounts.world_instance.instance;
         ctx.accounts.entity.components = components;
 

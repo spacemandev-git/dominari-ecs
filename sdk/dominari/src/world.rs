@@ -2,7 +2,6 @@ use anchor_lang::{prelude::*, InstructionData};
 use anchor_lang::system_program::ID as system_program;
 use dominariworld::account::WorldConfig;
 use solana_client_wasm::{WasmClient, solana_sdk::instruction::Instruction};
-
 use crate::util::fetch_account;
 
 pub struct World {

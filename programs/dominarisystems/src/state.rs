@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::component::MaxSize;
+
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone)]
 pub struct RelevantComponentKeys {
@@ -21,4 +23,11 @@ pub struct RelevantComponentKeys {
     pub damage: Pubkey,
     pub troop_class: Pubkey,
     pub active: Pubkey,
+    pub cost: Pubkey,
+}
+
+impl MaxSize for RelevantComponentKeys {
+    fn get_max_size() -> u64 {
+        return 32*19;
+    }
 }

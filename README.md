@@ -23,16 +23,17 @@
 
 ## Entities (Rows) & Components (Columns)
 
-|             | Metadata   | MapMeta    | Location | Feature | Owner | Occupant | Player Stats | Last Used | Active | 
-|:------------| :--------- | :--------- | :------- | :------ | :---- | :------- | :----------- | :-------- | :----- |
-| Map         |     X      |     x      |          |         |       |          |              |           |        |
-| Tile        |     x      |            |    x     |    x    |   x   |    x     |              |           |        |
-| Feature     |     x      |            |    x     |         |   x   |          |              |     x     |   x    |
-| Unit        |     x      |            |          |         |   x   |          |              |     x     |   x    |
-| Player      |     x      |            |          |         |       |          |       x      |           |        |
+|             | Metadata   | MapMeta    | Location | Feature | Owner | Occupant | P. Stats | Active | Cost |
+|:------------| :--------- | :--------- | :------- | :------ | :---- | :------- | :------- | :----- | :--- |
+| Map         |     X      |     x      |          |         |       |          |          |        |      |
+| Tile        |     x      |            |    x     |    x    |   x   |    x     |          |        |  x   |
+| Feature     |     x      |            |    x     |         |   x   |          |          |   x    |  x   |
+| Unit        |     x      |            |          |         |   x   |          |          |   x    |      |
+| Player      |     x      |            |          |         |       |          |    x     |        |      |
 
 
 // Features can be mix'd and matched between these three as well, for example, a Damage feature might be found on a Feature that's a static turret
+Last Used (because it has entity specific 'recovery' can be used on Features/Units)
 Feature Components: Rank, Range, Drop Table, Uses, Healer
 Unit Components: Damage, Health, Troop Class,  
 Card Components: Card Stats (Blueprint)
