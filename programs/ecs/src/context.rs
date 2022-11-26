@@ -170,7 +170,7 @@ pub struct RemoveEntity<'info>{
 pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize {
     let mut max_size:usize = 0;
     for comp in components {
-        max_size += comp.max_size as usize + SERIALIZED_COMPONENT_EXTRA_SPACE as usize; //44 is for the pubkey (32) and max_size (8) value and empty vec (4) in serialized comp itself
+        max_size += comp.max_size as usize + SERIALIZED_COMPONENT_EXTRA_SPACE as usize;
     }
     return max_size;
 }
@@ -179,7 +179,7 @@ pub fn get_removed_size(components: &Vec<SerializedComponent>, removed_component
     let mut removed_size:usize = 0;
     for comp in components.iter() {
         if removed_components.contains(&comp.component_key) {
-            removed_size += comp.max_size as usize + SERIALIZED_COMPONENT_EXTRA_SPACE as usize; //44 is for the pubkey (32) and max_size (8) value and empty vec (4) in serialized comp itself
+            removed_size += comp.max_size as usize + SERIALIZED_COMPONENT_EXTRA_SPACE as usize;
         }
     }
     return removed_size;

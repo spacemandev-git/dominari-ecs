@@ -6,7 +6,7 @@ use solana_client_wasm::{solana_sdk::{signer::Signer, transaction::Transaction},
 use std::env;
 use std::fs;
 
-use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
+//use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
 
 mod register;
 use register::*;
@@ -51,6 +51,8 @@ async fn main() {
         "account" => {
             // Deserialize and print out an account 
         },
+        "debug" => {
+        }
         &_ => {
             println!("Command ({}) Not Supported!", args.get(1).unwrap());
         }

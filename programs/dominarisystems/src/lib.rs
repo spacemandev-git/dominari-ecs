@@ -172,8 +172,6 @@ pub mod dominarisystems {
         ctx.accounts.instance_index.tiles.push(ctx.accounts.tile_entity.key());
         Ok(())
     }
-
-
     
     pub fn system_instance_feature(ctx:Context<SystemInstanceFeature>, entity_id: u64) -> Result<()> {
         // Check to make sure tile can be modified by payer
@@ -271,6 +269,14 @@ pub mod dominarisystems {
             signer_seeds
         );
         dominariworld::cpi::req_modify_component(modify_tile_ctx, vec![ctx.accounts.system_signer.components.feature.key()], vec![data])?;
+        Ok(())
+    }
+
+    pub fn system_init_player(ctx:Context<SystemInitPlayer>) -> Result <()> {
+        // Create Player Entity
+        // Give them Starting Card
+        // Optional: Fail if too many players already in the instance
+
         Ok(())
     }
 

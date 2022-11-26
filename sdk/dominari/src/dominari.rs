@@ -6,7 +6,6 @@ use dominarisystems::state::RelevantComponentKeys;
 use ecs::state::SerializedComponent;
 use serde::Deserialize;
 use solana_client_wasm::WasmClient;
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::instruction::Instruction;
 use rand::Rng;
 use crate::gamestate::GameState;
