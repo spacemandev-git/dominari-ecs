@@ -9,6 +9,7 @@ use solana_client_wasm::WasmClient;
 use solana_sdk::instruction::Instruction;
 use rand::Rng;
 use crate::gamestate::GameState;
+use crate::universe::Universe;
 
 #[derive(Clone)]
 pub struct Dominari {
@@ -207,7 +208,7 @@ impl Dominari {
         }]
     }
 
-    pub fn init_feature(&self, payer:Pubkey, instance:u64, tile:Pubkey,  blueprint: Pubkey) -> Vec<Instruction> {
+    pub fn init_feature(&self, payer:Pubkey, instance:u64, tile_id:u64 ,  blueprint: Pubkey) -> Vec<Instruction> {
         let world_program = self.world;
         let system_signer = self.get_system_signer();
         let world_config = Pubkey::find_program_address(&[
@@ -257,7 +258,7 @@ impl Dominari {
                 world_instance,
                 feature_entity,
                 blueprint,
-                tile_entity: tile,
+                tile_entity: Universe::get_keys_from_id(world_instance, vec![tile_id]).get(0).unwrap().clone(),
                 instance_index
             }.to_account_metas(Some(true)),
             data: dominarisystems::instruction::SystemInstanceFeature {
@@ -292,6 +293,67 @@ impl Dominari {
                 components,
             }.data()
         }]
+    }
+
+    pub fn init_player(&self, payer:Pubkey, instance: u64, name: String, image: String) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0;
+
+        let universe = ecs::id();
+        
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            world_program.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            self.get_system_signer().as_ref()
+        ], &world_program).0;
+
+        let mut rng = rand::thread_rng();
+        let entity_id:u64 = rng.gen();
+
+        let player_entity = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            entity_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ], &dominarisystems::id()).0;
+        
+        vec![Instruction {
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::SystemInitPlayer {
+                payer,
+                system_program,
+                system_signer,
+
+                world_config,
+                world_program,
+                universe,
+
+                system_registration,
+                world_instance,
+
+                player_entity,
+                instance_index
+            }.to_account_metas(Some(true)),
+            data: dominarisystems::instruction::SystemInitPlayer {
+                entity_id,
+                name, 
+                image
+            }.data()
+        }]
+
     }
 
     pub async fn build_gamestate(&mut self, instance:u64) -> &GameState {

@@ -2,7 +2,7 @@ use borsh::BorshSerialize;
 use dominari::{solana_sdk::{signature::{Keypair, read_keypair_file}, instruction::Instruction}, dominari::*, universe::SerializedComponent};
 use dominari::{universe::Universe, world::World, dominari::Dominari};
 use serde::Deserialize;
-use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
+//use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
 use solana_client_wasm::{solana_sdk::{signer::Signer, transaction::Transaction}, WasmClient};
 use tokio::task::JoinHandle;
 use std::env;
@@ -394,8 +394,6 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
 
     -> Setup Features, Units, Mods
         -> Register Blueprints as Accounts on DominariSystems for each Feature, Unit, Mod
-        -> Register Blueprint for Starting Card
-
 
     -> Setup Game
         -> Instance a Game (will instance a world underneath)

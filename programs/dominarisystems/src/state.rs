@@ -35,13 +35,13 @@ impl MaxSize for RelevantComponentKeys {
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone)]
 pub struct GameConfig {
-    pub max_players: u8,
+    pub max_players: u16,
     pub starting_cards: Vec<Pubkey>,
 }
 
 impl DependentMaxSize for GameConfig {
     fn get_max_size(&self) -> u64 {
-        return 1 + 4 + (self.starting_cards.len() as u64 * 32_u64);
+        return 2 + 4 + (self.starting_cards.len() as u64 * 32_u64);
     }
 }
 

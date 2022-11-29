@@ -10,7 +10,7 @@ pub mod state;
 
 //use account::*;
 use context::*;
-//use constant::*;
+use constant::*;
 use error::*;
 //use event::*;
 use component::*;
@@ -87,7 +87,7 @@ pub mod dominarisystems {
 
         // Mint Map Entity
         dominariworld::cpi::mint_entity(mint_entity_ctx, entity_id, components)?;
-        ctx.accounts.instance_index.map = ctx.accounts.map_entity.key();
+        ctx.accounts.instance_index.map = entity_id; //ctx.accounts.map_entity.key();
         Ok(())
     }
 
@@ -168,7 +168,7 @@ pub mod dominarisystems {
         );
 
         dominariworld::cpi::mint_entity(mint_entity_ctx, entity_id, components)?;
-        ctx.accounts.instance_index.tiles.push(ctx.accounts.tile_entity.key());
+        ctx.accounts.instance_index.tiles.push(entity_id);
         Ok(())
     }
     
@@ -246,7 +246,7 @@ pub mod dominarisystems {
         );
 
         dominariworld::cpi::mint_entity(mint_entity_ctx, entity_id, components)?;
-        ctx.accounts.instance_index.features.push(ctx.accounts.feature_entity.key());
+        ctx.accounts.instance_index.features.push(entity_id);
 
         // Modify the Tile Entity with the new Feature
         let tile_feature_component = ctx.accounts.tile_entity.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.feature.key()).unwrap();
@@ -291,15 +291,75 @@ pub mod dominarisystems {
         Ok(())
     }
 
-    /* 
-    pub fn system_init_player(ctx:Context<SystemInitPlayer>) -> Result <()> {
-        // Create Player Entity
-        // Give them Starting Card
+     
+    pub fn system_init_player(ctx:Context<SystemInitPlayer>, entity_id: u64, name:String, image: String ) -> Result <()> {
         // Optional: Fail if too many players already in the instance
+        if ctx.accounts.instance_index.config.max_players == ctx.accounts.instance_index.players.len() as u16 {
+            return err!(DominariError::PlayerCountExceeded)
+        }
+
+        if name.len() > STRING_MAX_SIZE as usize || image.len() > STRING_MAX_SIZE as usize {
+            return err!(ComponentErrors::StringTooLong)
+        }
+
+        // Create Player Entity
+        // Player has: Metadata and Player Stats
+        let mut components = vec![];
+        // Feature has Metadata, Location, Owner, Active, and ..Blueprint Components
+        let metadata_component = ComponentMetadata {
+            name: ctx.accounts.payer.key().to_string(),
+            entity_type: "Player".to_string(),
+            world_instance: ctx.accounts.world_instance.key(),
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent { 
+            component_key: ctx.accounts.system_signer.components.metadata.key(), 
+            max_size: ComponentMetadata::get_max_size(), 
+            data:  metadata_component
+        });
+
+        let player_stats_component = ComponentPlayerStats {
+            name,
+            image, 
+            key: ctx.accounts.payer.key(),
+            score: 0,
+            kills: 0,
+            // Give them Starting Card
+            cards: ctx.accounts.instance_index.config.starting_cards.clone()
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent { 
+            component_key: ctx.accounts.system_signer.components.player_stats.key(), 
+            max_size: ComponentPlayerStats::get_max_size(), 
+            data:  player_stats_component
+        });
+
+        let system_signer_seeds:&[&[u8]] = &[
+            b"System_Signer",
+            &[*ctx.bumps.get("system_signer").unwrap()]
+        ];
+        let signer_seeds = &[system_signer_seeds];
+
+        let mint_entity_ctx = CpiContext::new_with_signer(
+            ctx.accounts.world_program.to_account_info(),
+            dominariworld::cpi::accounts::MintEntity{
+                entity: ctx.accounts.player_entity.to_account_info(),
+                payer: ctx.accounts.payer.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                world_instance: ctx.accounts.world_instance.to_account_info(),
+                world_config: ctx.accounts.world_config.to_account_info(),
+                system: ctx.accounts.system_signer.to_account_info(),
+                system_registration: ctx.accounts.system_registration.to_account_info(),
+                universe: ctx.accounts.universe.to_account_info(),
+            },
+            signer_seeds
+        );
+
+        dominariworld::cpi::mint_entity(mint_entity_ctx, entity_id, components)?;
+        
+        // Add player entity to instance index
+        ctx.accounts.instance_index.players.push(entity_id);
 
         Ok(())
     }
-    */
 
 }
 

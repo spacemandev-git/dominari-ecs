@@ -110,6 +110,9 @@ impl MaxSize for ComponentOccupant {
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentPlayerStats{
+    pub name: String,
+    pub image: String,
+    pub key: Pubkey,
     pub score: u64,
     pub kills: u64,
     pub cards: Vec<Pubkey>, // Blueprints for Unit/Mod entities. Restricted to Max Cards in Hand const
@@ -117,7 +120,7 @@ pub struct ComponentPlayerStats{
 
 impl MaxSize for ComponentPlayerStats {
     fn get_max_size() -> u64 {
-        return 8+8+4+(32*PLAYER_MAX_CARDS)
+        return STRING_MAX_SIZE+STRING_MAX_SIZE+32+8+8+4+(32*PLAYER_MAX_CARDS)
     }
 }
 

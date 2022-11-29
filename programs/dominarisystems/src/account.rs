@@ -28,11 +28,11 @@ pub struct Blueprint {
 #[account]
 pub struct InstanceIndex {
     pub config: GameConfig,
-    pub map: Pubkey,
-    pub tiles: Vec<Pubkey>,
-    pub features: Vec<Pubkey>,
-    pub units: Vec<Pubkey>,
-    pub players: Vec<Pubkey>,
+    pub map: u64,
+    pub tiles: Vec<u64>,
+    pub features: Vec<u64>,
+    pub units: Vec<u64>,
+    pub players: Vec<u64>,
 }
 
 /**
@@ -42,6 +42,6 @@ pub struct InstanceIndex {
  */
 impl MaxSize for InstanceIndex {
     fn get_max_size() -> u64 {
-        return 32+4+4+4+4;
+        return 8+4+4+4+4;
     }
 }

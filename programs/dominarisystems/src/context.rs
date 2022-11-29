@@ -220,27 +220,14 @@ pub struct SystemInitPlayer<'info> {
         seeds::program = world_instance.world.key()
     )]
     pub world_config: Account<'info, WorldConfig>,
-
     pub world_program: Program<'info, Dominariworld>,
     pub universe: Program<'info, Ecs>, 
 
     pub system_registration: Box<Account<'info, SystemRegistration>>,
     pub world_instance: Account<'info, WorldInstance>,    
 
-    /// CHECK: Initalized through CPI
     #[account(mut)]
-    pub player_entity: AccountInfo<'info>,
-    #[account(
-        seeds=[
-            b"Blueprint",
-            b"starting_card",
-        ],
-        bump,
-    )]
-    pub blueprint: Box<Account<'info, Blueprint>>,
-    
-    #[account(mut)]
-    pub tile_entity: Box<Account<'info, Entity>>,
+    pub player_entity: Box<Account<'info, Entity>>,
 
     #[account(
         mut,
