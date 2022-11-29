@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
 
-use crate::account::*;
+use crate::{account::*, state::GameConfig};
 use crate::component::MaxSize;
 use crate::constant::*;
-use crate::state::RelevantComponentKeys;
+use crate::state::*;
 
 use ecs::{
     state::SerializedComponent, 
@@ -89,14 +89,12 @@ pub struct SystemInitMap<'info> {
     pub map_entity: AccountInfo<'info>,
 
     #[account(
-        init,
-        payer=payer,
+        mut,
         seeds=[
             b"Instance_Index",
             world_instance.key().as_ref()
         ],
         bump,
-        space=8+32+4+4+4+4
     )]
     pub instance_index: Box<Account<'info, InstanceIndex>>,
 }
@@ -254,6 +252,47 @@ pub struct SystemInitPlayer<'info> {
             world_instance.key().as_ref()
         ],
         bump,
+    )]
+    pub instance_index: Box<Account<'info, InstanceIndex>>,
+}
+
+#[derive(Accounts)]
+#[instruction(instance:u64, config: GameConfig)]
+pub struct CreateGameInstance<'info>{
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    #[account(
+        constraint = system_signer.authority.key() == payer.key(), //Only System Auth can make new Maps
+        seeds=[b"System_Signer"],
+        bump,
+    )]
+    pub system_signer: Box<Account<'info, SystemConfig>>,
+
+    /// CHECK: Signing account for DM Worlds
+    #[account(mut)]    
+    pub world_config: AccountInfo<'info>,
+
+    pub world_program: Program<'info, Dominariworld>,
+    pub universe: Program<'info, Ecs>, 
+
+    /// CHECK: Created via CPI in the Universe program
+    #[account(mut)]
+    pub world_instance: AccountInfo<'info>,
+
+    /// CHECK: Created via CPI in the World program
+    #[account(mut)]
+    pub instance_authority: AccountInfo<'info>,
+
+    #[account(
+        init,
+        payer=payer,
+        seeds=[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ],
+        bump,
+        space= 8 + InstanceIndex::get_max_size() as usize + config.get_max_size() as usize
     )]
     pub instance_index: Box<Account<'info, InstanceIndex>>,
 }

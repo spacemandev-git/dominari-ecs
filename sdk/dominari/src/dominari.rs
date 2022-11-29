@@ -104,6 +104,51 @@ impl Dominari {
         }]
     }
 
+    pub fn init_game(&self, payer:Pubkey, instance: u64, config: dominarisystems::state::GameConfig) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0;
+
+        let universe = ecs::id();
+
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            world_program.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ], &dominarisystems::id()).0;
+
+        let instance_authority = Pubkey::find_program_address(&[
+            b"Instance_Authority",
+            world_instance.key().as_ref()
+        ], &world_program).0;
+
+        vec![Instruction {
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::CreateGameInstance {
+                payer,
+                system_program,
+                system_signer,
+                world_config,
+                world_program,
+                universe,
+                world_instance,
+                instance_index,
+                instance_authority,
+            }.to_account_metas(None),
+            data: dominarisystems::instruction::CreateGameInstance {
+                instance,
+                config
+            }.data()
+        }]
+    }
+
     pub fn init_tile(&self, payer:Pubkey, instance:u64, x:u8, y:u8, cost:u64) -> Vec<Instruction> {
         let world_program = self.world;
         let system_signer = self.get_system_signer();
@@ -232,6 +277,7 @@ impl Dominari {
         let system_signer = self.get_system_signer();
         
         let blueprint = Dominari::get_blueprint_key(&name);
+        println!("Registering Blueprint {} at Key {}", name, blueprint);
 
         vec![Instruction {
             program_id: dominarisystems::id(),
@@ -372,3 +418,4 @@ pub struct BlueprintConfig {
 }
 
 pub use dominarisystems::component::*;
+pub use dominarisystems::state::*;

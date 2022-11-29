@@ -24,7 +24,6 @@ pub mod dominariworld {
 
     pub fn initalize(ctx:Context<Initialize>, universe: Pubkey) -> Result<()> {
         ctx.accounts.world_config.universe = universe;
-        ctx.accounts.world_config.instances = 0;
         ctx.accounts.world_config.components = 0;
         Ok(())
     }
@@ -35,7 +34,7 @@ pub mod dominariworld {
      * We also set the Instance Authority for the World to the Payer
      * This authority is the only one that can add systems to a given instance
      */
-    pub fn instance_world(ctx:Context<InstanceWorld>) -> Result<()> {
+    pub fn instance_world(ctx:Context<InstanceWorld>, instance:u64) -> Result<()> {
         let universe = ctx.accounts.universe.to_account_info();
         let accounts = ecs::cpi::accounts::RegisterWorldInstance {
             payer: ctx.accounts.payer.to_account_info(),
@@ -54,10 +53,9 @@ pub mod dominariworld {
             accounts,
             signer_seeds
         );
-        
-        ecs::cpi::register_world(register_world_ctx, ctx.program_id.key(), ctx.accounts.world_config.instances+1_u64)?;
-        ctx.accounts.world_config.instances += 1; // basically the UUID for the instance
-        ctx.accounts.instance_authority.instance = ctx.accounts.world_config.instances;
+
+        ecs::cpi::register_world(register_world_ctx, ctx.program_id.key(), instance)?;
+        ctx.accounts.instance_authority.instance = instance;
         ctx.accounts.instance_authority.authority = ctx.accounts.payer.key(); // fancier Worlds might have different governance setup for this
 
         emit!(NewWorldInstance{

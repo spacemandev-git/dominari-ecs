@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::component::MaxSize;
 
-
+#[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone)]
 pub struct RelevantComponentKeys {
     pub metadata: Pubkey,
@@ -30,4 +30,21 @@ impl MaxSize for RelevantComponentKeys {
     fn get_max_size() -> u64 {
         return 32*19;
     }
+}
+
+#[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
+#[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone)]
+pub struct GameConfig {
+    pub max_players: u8,
+    pub starting_cards: Vec<Pubkey>,
+}
+
+impl DependentMaxSize for GameConfig {
+    fn get_max_size(&self) -> u64 {
+        return 1 + 4 + (self.starting_cards.len() as u64 * 32_u64);
+    }
+}
+
+pub trait DependentMaxSize {
+    fn get_max_size(&self) -> u64;
 }

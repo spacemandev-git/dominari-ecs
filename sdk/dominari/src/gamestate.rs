@@ -46,7 +46,7 @@ impl GameState {
 
     pub async fn load_state(&mut self) {
         let index = self.get_instance_index(self.instance).await;
-        self.index = Some(index);        
+        self.index = Some(index);
         let mut entities: HashMap<Pubkey, Entity> = HashMap::new();
 
         entities.insert(self.index.as_ref().unwrap().map, fetch_account(&self.client, &self.index.as_ref().unwrap().map).await.unwrap());

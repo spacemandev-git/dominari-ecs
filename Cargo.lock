@@ -727,6 +727,7 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "dominari",
+ "rand 0.8.5",
  "serde",
  "shellexpand",
  "solana-client",

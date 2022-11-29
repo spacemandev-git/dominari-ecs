@@ -64,18 +64,17 @@ impl World {
         }]
     }
 
-    pub async fn instance_world(&self, payer:Pubkey) -> Vec<Instruction> {
+    pub async fn instance_world(&self, payer:Pubkey, instance:u64) -> Vec<Instruction> {
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &self.pubkey).0;
 
-        let world_config_acc:dominariworld::account::WorldConfig = self.get_world_config().await.1;
 
         let world_instance = Pubkey::find_program_address(&[
             b"World".as_ref(),
             &self.pubkey.as_ref(),
-            (world_config_acc.instances + 1_u64).to_be_bytes().as_ref()
-        ], &world_config_acc.universe).0;
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
 
         let instance_authority = Pubkey::find_program_address(&[
             b"Instance_Authority".as_ref(),
@@ -92,7 +91,9 @@ impl World {
                 instance_authority,
                 universe: ecs::id(),
             }.to_account_metas(Some(true)), // This will CPI into Universe program, so some of these accounts are signers
-            data: dominariworld::instruction::InstanceWorld {}.data()
+            data: dominariworld::instruction::InstanceWorld {
+                instance
+            }.data()
         }]
     } 
     

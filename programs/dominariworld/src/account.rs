@@ -1,12 +1,10 @@
 use anchor_lang::prelude::*;
-use std::collections::BTreeMap;
 
 //use crate::state::*;
 
 #[account]
 pub struct WorldConfig{
     pub universe: Pubkey,
-    pub instances: u64,
     pub components: u64,
 }
 

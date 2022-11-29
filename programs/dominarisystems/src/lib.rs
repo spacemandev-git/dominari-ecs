@@ -10,9 +10,9 @@ pub mod state;
 
 //use account::*;
 use context::*;
-use constant::*;
+//use constant::*;
 use error::*;
-use event::*;
+//use event::*;
 use component::*;
 use state::*;
 
@@ -87,7 +87,6 @@ pub mod dominarisystems {
 
         // Mint Map Entity
         dominariworld::cpi::mint_entity(mint_entity_ctx, entity_id, components)?;
-
         ctx.accounts.instance_index.map = ctx.accounts.map_entity.key();
         Ok(())
     }
@@ -272,6 +271,27 @@ pub mod dominarisystems {
         Ok(())
     }
 
+    pub fn create_game_instance(ctx:Context<CreateGameInstance>, instance:u64, config: GameConfig) -> Result<()> {
+        // Instance the World
+        let instance_ctx = CpiContext::new(
+            ctx.accounts.world_program.to_account_info(),
+            dominariworld::cpi::accounts::InstanceWorld {
+                payer: ctx.accounts.payer.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                world_config: ctx.accounts.world_config.to_account_info(),
+                world_instance: ctx.accounts.world_instance.to_account_info(),
+                universe: ctx.accounts.universe.to_account_info(),
+                instance_authority: ctx.accounts.instance_authority.to_account_info()
+            }
+        );
+
+        dominariworld::cpi::instance_world(instance_ctx, instance)?;
+        // Set up Instance Index
+        ctx.accounts.instance_index.config = config; 
+        Ok(())
+    }
+
+    /* 
     pub fn system_init_player(ctx:Context<SystemInitPlayer>) -> Result <()> {
         // Create Player Entity
         // Give them Starting Card
@@ -279,6 +299,7 @@ pub mod dominarisystems {
 
         Ok(())
     }
+    */
 
 }
 

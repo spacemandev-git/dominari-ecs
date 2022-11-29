@@ -21,7 +21,7 @@ pub struct Initialize<'info>{
         payer=payer,
         seeds=[b"world_signer"],
         bump,
-        space=8+32+8+8
+        space=8+32+8
     )]
     pub world_config: Account<'info, WorldConfig>,
 }
