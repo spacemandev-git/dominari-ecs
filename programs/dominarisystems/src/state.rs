@@ -24,11 +24,12 @@ pub struct RelevantComponentKeys {
     pub troop_class: Pubkey,
     pub active: Pubkey,
     pub cost: Pubkey,
+    pub offchain_metadata: Pubkey
 }
 
 impl MaxSize for RelevantComponentKeys {
     fn get_max_size() -> u64 {
-        return 32*19;
+        return 32*20;
     }
 }
 

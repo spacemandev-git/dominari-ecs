@@ -7,6 +7,12 @@ pub enum DominariError {
 
     #[msg("Instance already has max players!")]
     PlayerCountExceeded,
+
+    #[msg("Players can only PAUSE or PLAY their game!")]
+    InvalidPlayPhase,
+
+    #[msg("Only players in this game can call this function!")]
+    InvalidPlayer,
 }
 
 #[error_code]
@@ -14,6 +20,30 @@ pub enum ComponentErrors {
     #[msg("Invalid Owner!")]
     InvalidOwner,
 
+    #[msg("Friendly fire not allowed!")]
+    FriendlyFire,
+
     #[msg("String too long!")]
     StringTooLong,
+
+    #[msg("Tile Occupied")]
+    TileOccupied,
+
+    #[msg("Player doesn't have that card")]
+    InvalidCard,
+
+    #[msg("Invalid Unit")]
+    InvalidUnit,
+
+    #[msg("Unit is recovering from last move")]
+    UnitRecovering,
+
+    #[msg("Unit cannot move that far")]
+    UnitLacksMovement,
+    
+    #[msg("Trying to interact with a dead unit")]
+    UnitDead,
+
+    #[msg("Unit out of range")]
+    OutOfRange,
 }

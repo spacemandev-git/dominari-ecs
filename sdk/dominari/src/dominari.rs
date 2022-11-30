@@ -300,7 +300,7 @@ impl Dominari {
         let system_signer = self.get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
-        ], &world_program).0;
+        ], &world_program).0; 
 
         let universe = ecs::id();
         
@@ -354,6 +354,56 @@ impl Dominari {
             }.data()
         }]
 
+    }
+
+    pub fn change_game_state(&self, payer: Pubkey, instance: u64, player_id: u64, game_state: dominarisystems::component::PlayPhase) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0;
+
+        let universe = ecs::id();
+        
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            world_program.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            self.get_system_signer().as_ref()
+        ], &world_program).0;
+
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ], &dominarisystems::id()).0;
+
+        let map = Universe::get_keys_from_id(world_instance, vec![self.get_gamestate(instance).index.as_ref().unwrap().map]).get(0).unwrap().clone();
+        let player = Universe::get_keys_from_id(world_instance, vec![player_id]).get(0).unwrap().clone();
+
+
+        vec![Instruction {
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::ChangeGameState {
+                payer,
+                system_signer,
+                world_config,
+                world_program,
+                universe,
+                system_registration,
+                world_instance,
+                player,
+                map,
+                instance_index
+            }.to_account_metas(Some(true)),
+            data: dominarisystems::instruction::ChangeGameState {
+                game_state
+            }.data()
+        }]
     }
 
     pub async fn build_gamestate(&mut self, instance:u64) -> &GameState {
@@ -412,7 +462,7 @@ impl ComponentSchema {
             "occupant".to_string(),
             "player_stats".to_string(),
             "last_used".to_string(),
-            "rank".to_string(),
+            "feature_rank".to_string(),
             "range".to_string(),
             "drop_table".to_string(),
             "uses".to_string(),
@@ -421,7 +471,8 @@ impl ComponentSchema {
             "damage".to_string(),
             "troop_class".to_string(),
             "active".to_string(),
-            "cost".to_string()
+            "cost".to_string(),
+            "offchain_metadata".to_string()
         ]
     }
 
@@ -441,7 +492,7 @@ impl ComponentSchema {
             occupant: *self.get_component_pubkey(&"occupant".to_string()),
             player_stats: *self.get_component_pubkey(&"player_stats".to_string()),
             last_used: *self.get_component_pubkey(&"last_used".to_string()),
-            rank: *self.get_component_pubkey(&"rank".to_string()),
+            rank: *self.get_component_pubkey(&"feature_rank".to_string()),
             range: *self.get_component_pubkey(&"range".to_string()),
             drop_table: *self.get_component_pubkey(&"drop_table".to_string()),
             uses: *self.get_component_pubkey(&"uses".to_string()),
@@ -451,6 +502,7 @@ impl ComponentSchema {
             troop_class: *self.get_component_pubkey(&"troop_class".to_string()),
             active: *self.get_component_pubkey(&"active".to_string()),
             cost: *self.get_component_pubkey(&"cost".to_string()),
+            offchain_metadata: *self.get_component_pubkey(&"offchain_metadata".to_string()),
         }
     }
     
@@ -467,7 +519,7 @@ pub struct BlueprintConfig {
     pub occupant: Option<dominarisystems::component::ComponentOccupant>,
     pub player_stats: Option<dominarisystems::component::ComponentPlayerStats>,
     pub last_used: Option<dominarisystems::component::ComponentLastUsed>,
-    pub rank: Option<dominarisystems::component::ComponentRank>,
+    pub feature_rank: Option<dominarisystems::component::ComponentFeatureRank>,
     pub range: Option<dominarisystems::component::ComponentRange>,
     pub drop_table: Option<dominarisystems::component::ComponentDropTable>,
     pub uses: Option<dominarisystems::component::ComponentUses>,
@@ -477,6 +529,7 @@ pub struct BlueprintConfig {
     pub troop_class: Option<dominarisystems::component::ComponentTroopClass>,
     pub active: Option<dominarisystems::component::ComponentActive>,
     pub cost: Option<dominarisystems::component::ComponentCost>,
+    pub offchain_metadata: Option<dominarisystems::component::ComponentOffchainMetadata>,
 }
 
 pub use dominarisystems::component::*;

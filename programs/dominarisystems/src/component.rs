@@ -10,8 +10,18 @@ pub trait MaxSize {
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentMetadata{
     pub name: String,
-    pub entity_type: String,
+    pub entity_type: EntityType,
     pub world_instance: Pubkey
+}
+
+#[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, PartialEq)]
+pub enum EntityType {
+    Map,
+    Unit,
+    Feature,
+    Tile,
+    Player
 }
 
 impl MaxSize for ComponentMetadata {
@@ -35,7 +45,7 @@ impl MaxSize for ComponentMapMeta {
 }
 
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, PartialEq)]
 pub enum PlayPhase {
     Lobby,
     Build,
@@ -73,12 +83,12 @@ impl MaxSize for ComponentFeature {
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentOwner{
     pub owner: Option<Pubkey>,    // Keypair for Tile Owner
-    pub player: Option<Pubkey>    // Entity ID for Tile Owner's Player
+    pub player: Option<u64>    // Entity ID for Tile Owner's Player
 }
 
 impl MaxSize for ComponentOwner {
     fn get_max_size() -> u64 {
-        return 1+32+1+32
+        return 1+32+1+8
     }
 }
 
@@ -98,12 +108,12 @@ impl MaxSize for ComponentValue {
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentOccupant{
-    pub occupant_id: Option<Pubkey>
+    pub occupant_id: Option<u64>
 }
 
 impl MaxSize for ComponentOccupant {
     fn get_max_size() -> u64 {
-        return 1+32
+        return 1+8
     }
 }
 
@@ -112,7 +122,7 @@ impl MaxSize for ComponentOccupant {
 pub struct ComponentPlayerStats{
     pub name: String,
     pub image: String,
-    pub key: Pubkey,
+    pub key: Pubkey, //owner key
     pub score: u64,
     pub kills: u64,
     pub cards: Vec<Pubkey>, // Blueprints for Unit/Mod entities. Restricted to Max Cards in Hand const
@@ -140,7 +150,7 @@ impl MaxSize for ComponentLastUsed {
 // Rank Names and Links restricted to 32 characters otherwise this would be a very expensive component to create
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
-pub struct ComponentRank{
+pub struct ComponentFeatureRank{
     pub rank: u8,
     pub max_rank: u8,                  
     pub cost_for_use_ladder: Vec<u64>, // how much it costs at every rank to use the feature
@@ -149,7 +159,7 @@ pub struct ComponentRank{
     pub per_rank_stat_increase: u64    // Can be interpretted for one stat or many
 }
 
-impl MaxSize for ComponentRank {
+impl MaxSize for ComponentFeatureRank {
     fn get_max_size() -> u64 {
         return 1 + 1 + 4 + (8*FEATURE_MAX_RANK) + 4 + (FEATURE_MAX_STRING*FEATURE_MAX_RANK) + 4 + (FEATURE_MAX_STRING*FEATURE_MAX_RANK) + 8
     }
@@ -158,12 +168,13 @@ impl MaxSize for ComponentRank {
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentRange{
-    pub range: u64,
+    pub movement: u64,
+    pub attack_range: u64,
 }
 
 impl MaxSize for ComponentRange {
     fn get_max_size() -> u64 {
-        return 8
+        return 8+8
     }
 }
 
@@ -221,14 +232,15 @@ impl MaxSize for ComponentHealth {
 pub struct ComponentDamage{
     pub min_damage: u64,
     pub max_damage: u64,
-    pub modifier_infantry: i32,
-    pub modifier_armor: i32,
-    pub modifer_aircraft: i32
+    pub bonus_infantry: u32,
+    pub bonus_armor: u32,
+    pub bonus_aircraft: u32,
+    pub bonus_feature: u32,
 }
 
 impl MaxSize for ComponentDamage {
     fn get_max_size() -> u64 {
-        return 8 + 8 + 4 + 4 + 4
+        return 8 + 8 + 4 + 4 + 4 + 4
     }
 }
 
@@ -249,7 +261,7 @@ impl MaxSize for ComponentTroopClass {
 pub enum TroopClass {
     Infantry,
     Armor,
-    Aircraft
+    Aircraft,
 }
 
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
@@ -273,5 +285,17 @@ pub struct ComponentCost{
 impl MaxSize for ComponentCost {
     fn get_max_size() -> u64 {
         return 8
+    }
+}
+
+#[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct ComponentOffchainMetadata{
+    pub link: String,
+}
+
+impl MaxSize for ComponentOffchainMetadata {
+    fn get_max_size() -> u64 {
+        return STRING_MAX_SIZE*2 //can be 2 times regular string for long url links
     }
 }

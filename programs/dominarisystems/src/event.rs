@@ -19,3 +19,19 @@ pub struct NewSystemRegistration {
     pub system: Pubkey,
     pub system_registration: Pubkey
 }
+
+#[event]
+pub struct NewUnitSpawned {
+    pub instance: u64,
+    pub tile: u64,
+    pub player: u64,
+    pub unit: u64,
+}
+
+#[event]
+pub struct TroopMovement {
+    pub instance: u64,
+    pub from: u64,
+    pub to: u64,
+    pub unit: u64
+}

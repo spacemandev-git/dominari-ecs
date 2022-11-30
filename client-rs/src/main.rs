@@ -220,11 +220,11 @@ pub async fn register_blueprints(client: &Client, dir: &String) {
             });
         }
 
-        if blueprint.rank.is_some() {
+        if blueprint.feature_rank.is_some() {
             components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"rank".to_string()).clone(),
-                max_size: ComponentRank::get_max_size(), 
-                data:  blueprint.rank.as_ref().unwrap().try_to_vec().unwrap()
+                component_key: schemas.get_component_pubkey(&"feature_rank".to_string()).clone(),
+                max_size: ComponentFeatureRank::get_max_size(), 
+                data:  blueprint.feature_rank.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
@@ -300,6 +300,14 @@ pub async fn register_blueprints(client: &Client, dir: &String) {
             });
         }
 
+        if blueprint.offchain_metadata.is_some() {
+            components.push(SerializedComponent { 
+                component_key: schemas.get_component_pubkey(&"offchain_metadata".to_string()).clone(),
+                max_size: ComponentOffchainMetadata::get_max_size(), 
+                data:  blueprint.offchain_metadata.as_ref().unwrap().try_to_vec().unwrap()
+            });
+        }
+
         // Register Blueprint Tx
         let mut register_blueprint_tx = Transaction::new_with_payer(
             client.dominari.register_blueprint(client.id01.pubkey(), name.to_string(), components).await.as_slice(),
@@ -322,7 +330,7 @@ pub async fn setup_game(client: &mut Client, path: &String, instance: u64) {
 
     // Instance the game (will instance the world)
     let mut create_game_tx = Transaction::new_with_payer(
-        &client.dominari.init_game(client.id01.pubkey(), instance, config.config),
+        &client.dominari.init_game(client.id01.pubkey(), instance, config.config.clone()),
         Some(&client.id01.pubkey())
     );
     create_game_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
@@ -333,6 +341,28 @@ pub async fn setup_game(client: &mut Client, path: &String, instance: u64) {
 
     // Create Map & Tiles & Features
     map(client, instance, config.map).await;
+
+    // Create Players (all on the same keypair, but will have different IDs)
+    for p in 0..config.config.max_players {
+        let mut create_player_tx = Transaction::new_with_payer(
+            &client.dominari.init_player(client.id01.pubkey(), instance, format!("Player {}", p), "".to_string()),
+            Some(&client.id01.pubkey())
+        );
+        create_player_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
+        client.rpc.send_and_confirm_transaction(&create_player_tx).await.unwrap();
+    }
+
+    client.dominari.get_mut_gamestate(instance).load_state().await;
+    let player_ids = client.dominari.get_gamestate(instance).index.as_ref().unwrap().players.clone();
+    println!("Players Created: {:?}", player_ids);
+
+    let mut start_game_tx = Transaction::new_with_payer(
+        &client.dominari.change_game_state(client.id01.pubkey(), instance, player_ids.get(0).unwrap().clone(), PlayPhase::Play),
+        Some(&client.id01.pubkey())
+    );
+    start_game_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
+    client.rpc.send_and_confirm_transaction(&start_game_tx).await.unwrap();
+    println!("Game Started!");
 }
 
 pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
@@ -404,9 +434,6 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
         -> Create Player Entity
         -> Init Player by giving them a starting Unit Blueprint as a card
 
-    -> Build Phase Sim 01
-        -> Two players buy and build various features on locations
-
-    -> Phase Phase Sim 02
+    -> Play Sim 01
         -> Two players spawn units and use features while attempting to kill other player off
 */
