@@ -406,6 +406,200 @@ impl Dominari {
         }]
     }
 
+    // Spawn Unit
+    pub fn spawn_unit(&self, payer:Pubkey, instance:u64, player_id: u64, tile_id:u64, unit_blueprint: Pubkey) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0; 
+
+        let universe = ecs::id();
+        
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            world_program.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            self.get_system_signer().as_ref()
+        ], &world_program).0;
+
+        let mut rng = rand::thread_rng();
+        let unit_id:u64 = rng.gen();
+
+        let unit = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            unit_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let player = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            player_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let tile = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            tile_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ], &dominarisystems::id()).0;
+
+
+        vec![Instruction {
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::SpawnUnit {
+                payer,
+                system_program,
+                system_signer,
+
+                world_config,
+                world_program,
+                universe,
+
+                system_registration,
+                world_instance,
+
+                unit,
+                unit_blueprint,
+                player,
+                tile,
+                instance_index
+            }.to_account_metas(Some(true)),
+            data: dominarisystems::instruction::SpawnUnit {
+                unit_id
+            }.data()
+        }]
+    }
+
+    // Move Unit
+    pub fn move_unit(&self, payer: Pubkey, instance: u64, from_tile_id: u64, to_tile_id: u64) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0; 
+
+        let universe = ecs::id();
+        
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            world_program.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            self.get_system_signer().as_ref()
+        ], &world_program).0;
+
+        let unit_id = &self.get_gamestate(instance).get_unit_on_tile(from_tile_id).0;
+        
+        let unit = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            unit_id.unwrap().to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let from = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            from_tile_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let to = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            to_tile_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        vec![Instruction {
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::MoveUnit {
+                payer,
+                system_program,
+                system_signer,
+
+                world_config,
+                world_program,
+                universe,
+
+                system_registration,
+                world_instance,
+
+                from,
+                to,
+                unit
+            }.to_account_metas(Some(true)),
+            data: dominarisystems::instruction::MoveUnit {}.data()
+        }]
+    }
+
+    // Attack Unit
+    pub fn attack_tile(&self, payer: Pubkey, instance: u64, attacker_id: u64, defender_id: u64) -> Vec<Instruction> {
+        let world_program = self.world;
+        let system_signer = self.get_system_signer();
+        let world_config = Pubkey::find_program_address(&[
+            b"world_signer".as_ref(),
+        ], &world_program).0; 
+
+        let universe = ecs::id();
+        
+        let world_instance = Pubkey::find_program_address(&[
+            b"World".as_ref(),
+            world_program.as_ref(),
+            instance.to_be_bytes().as_ref()
+        ], &ecs::id()).0;
+
+        let system_registration = Pubkey::find_program_address(&[
+            b"System_Registration",
+            world_instance.to_bytes().as_ref(),
+            self.get_system_signer().as_ref()
+        ], &world_program).0;
+
+        let attacker = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            attacker_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        let defender = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            defender_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
+        vec![Instruction {
+            program_id: dominarisystems::id(),
+            accounts: dominarisystems::accounts::AttackTile {
+                payer,
+                system_program,
+                system_signer,
+
+                world_config,
+                world_program,
+                universe,
+
+                system_registration,
+                world_instance,
+
+                attacker,
+                defender
+            }.to_account_metas(Some(true)),
+            data: dominarisystems::instruction::AttackTile {}.data()
+        }]
+    }
+
     pub async fn build_gamestate(&mut self, instance:u64) -> &GameState {
         self.state.insert(instance, GameState::new(self.client.clone(), self.world, instance));
         self.get_mut_gamestate(instance).load_state().await;
@@ -424,7 +618,8 @@ impl Dominari {
 
 #[derive(Clone, Debug)]
 pub struct ComponentSchema {
-    pub schemas: bimap::BiMap<String, Pubkey>
+    pub schemas: bimap::BiMap<String, Pubkey>,
+    pub key_index: Option<RelevantComponentKeys>
 }
 
 impl ComponentSchema {
@@ -436,7 +631,9 @@ impl ComponentSchema {
             schemas.insert(url.clone(), ComponentSchema::get_world_component(world, url));
         }
 
-        return ComponentSchema { schemas, }
+        let mut schemas = ComponentSchema { schemas, key_index: None };
+        schemas.key_index = Some(schemas.get_relevant_component_keys());
+        return schemas;
     }
 
     pub fn get_world_component(world:&Pubkey, schema: &String) -> Pubkey {
@@ -451,6 +648,7 @@ impl ComponentSchema {
         self.schemas.get_by_right(pubkey).unwrap()
     }
 
+    // TODO: Change the names to URLs where each of these components can be found
     pub fn get_all_schema_urls() -> Vec<String> {
         vec![
             "metadata".to_string(),
@@ -492,7 +690,7 @@ impl ComponentSchema {
             occupant: *self.get_component_pubkey(&"occupant".to_string()),
             player_stats: *self.get_component_pubkey(&"player_stats".to_string()),
             last_used: *self.get_component_pubkey(&"last_used".to_string()),
-            rank: *self.get_component_pubkey(&"feature_rank".to_string()),
+            feature_rank: *self.get_component_pubkey(&"feature_rank".to_string()),
             range: *self.get_component_pubkey(&"range".to_string()),
             drop_table: *self.get_component_pubkey(&"drop_table".to_string()),
             uses: *self.get_component_pubkey(&"uses".to_string()),

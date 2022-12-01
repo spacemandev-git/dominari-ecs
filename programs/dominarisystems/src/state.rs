@@ -14,7 +14,7 @@ pub struct RelevantComponentKeys {
     pub occupant: Pubkey,
     pub player_stats: Pubkey,
     pub last_used: Pubkey,
-    pub rank: Pubkey,
+    pub feature_rank: Pubkey,
     pub range: Pubkey,
     pub drop_table: Pubkey,
     pub uses: Pubkey,

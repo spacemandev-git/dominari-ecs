@@ -428,7 +428,7 @@ pub mod dominarisystems {
 
         // Create Unit Entity
         let mut components: Vec<SerializedComponent> = vec![];
-        // Add Metadata, Owner, Location + Blueprint components
+        // Add Metadata, Owner, Location, Active + Blueprint components
         let metadata_component = ComponentMetadata {
             name: ctx.accounts.unit_blueprint.name.clone(),
             entity_type: EntityType::Unit,
@@ -448,6 +448,14 @@ pub mod dominarisystems {
             component_key: ctx.accounts.system_signer.components.owner.key(),
             max_size: ComponentOwner::get_max_size(),
             data: owner_component
+        });
+        let active_component = ComponentActive {
+            active: true
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent{
+            component_key: ctx.accounts.system_signer.components.active.key(),
+            max_size: ComponentActive::get_max_size(),
+            data: active_component
         });
 
         // Clone the Tile's location component to the Unit

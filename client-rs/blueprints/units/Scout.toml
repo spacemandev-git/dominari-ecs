@@ -4,10 +4,10 @@ link = "scout.png"
 [damage]
 min_damage = 1
 max_damage = 10
-modifier_infantry = 0 
-modifier_armor = 0 
-modifer_aircraft = 0
-modifier_feature = 0
+bonus_infantry = 0 
+bonus_armor = 0 
+bonus_aircraft = 0
+bonus_feature = 0
 
 [health]
 health = 10
@@ -25,6 +25,3 @@ recovery = 4
 
 [value]
 value = 1
-
-[active]
-active = true
