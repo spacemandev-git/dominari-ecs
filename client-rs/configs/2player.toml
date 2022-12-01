@@ -1,3 +1,6 @@
+[tranformation]
+starting_cards = ["Scout"]
+
 [config]
 max_players = 2
 starting_cards = []

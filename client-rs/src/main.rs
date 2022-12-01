@@ -325,7 +325,13 @@ pub async fn register_blueprints(client: &Client, dir: &String) {
 }
 
 pub async fn setup_game(client: &mut Client, path: &String, instance: u64) {
-    let config:Game = toml::from_str(fs::read_to_string(path.as_str()).unwrap().as_str()).unwrap();
+    let mut config:Game = toml::from_str(fs::read_to_string(path.as_str()).unwrap().as_str()).unwrap();
+    // Transform the transformation.starting_cards (Strings) into config.config.starting_cards (Pubkeys)
+    for card in config.transformation.starting_cards {
+        config.config.starting_cards.push(Dominari::get_blueprint_key(&card));
+    }
+
+
     //println!("Config Found: {:?}", config);
 
     // Instance the game (will instance the world)

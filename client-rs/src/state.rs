@@ -3,8 +3,14 @@ use crate::*;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Game {
+    pub transformation: Transformation,
     pub config: GameConfig,
     pub map: MapConfig,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Transformation {
+    pub starting_cards: Vec<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
