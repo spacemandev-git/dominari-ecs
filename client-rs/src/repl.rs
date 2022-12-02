@@ -3,7 +3,7 @@ use std::sync::mpsc::channel;
 use anchor_client::{solana_sdk::commitment_config::CommitmentConfig, Cluster, EventContext};
 use dominari::gamestate::GameState;
 use prettytable::{Table, Cell};
-use std::sync::{Arc};
+use std::sync::Arc;
 use futures::lock::Mutex;
 
 use crate::*;
@@ -264,33 +264,33 @@ pub fn tile_info(state: &GameState, x:u8, y:u8) {
         println!("\tFeature:");
         // Feature should print various components based on type of Feature TODO
         let metadata = state.get_entity_metadata(&feature.0.unwrap()).unwrap();
-        println!("\t\t{}", metadata.name);
+        println!("\t{}", metadata.name);
     }
     // Show unit name
     if occupant.0.is_some() {
         println!("\tUnit:");
         let metadata = state.get_entity_metadata(&occupant.0.unwrap()).unwrap();
-        println!("\t\t{}", metadata.name);
+        println!("\t{}", metadata.name);
 
         // Print Unit Owner underneath
         let owner = state.get_entity_owner(&occupant.0.unwrap()).unwrap();
         let player = state.get_entity_player_stats(&owner.player.unwrap()).unwrap();
-        println!("\t\t{}", player.name);
+        println!("\t{}", player.name);
 
         // Health
-        println!("\t\t{:?}", state.get_entity_health(&occupant.0.unwrap()).unwrap());
+        println!("\t{:?}", state.get_entity_health(&occupant.0.unwrap()).unwrap());
         // Damage
-        println!("\t\t{:?}", state.get_entity_damage(&occupant.0.unwrap()).unwrap());
+        println!("\t{:?}", state.get_entity_damage(&occupant.0.unwrap()).unwrap());
         // Class
-        println!("\t\t{:?}", state.get_entity_troop_class(&occupant.0.unwrap()).unwrap());
+        println!("\t{:?}", state.get_entity_troop_class(&occupant.0.unwrap()).unwrap());
         // Range
-        println!("\t\t{:?}", state.get_entity_range(&occupant.0.unwrap()).unwrap());
+        println!("\t{:?}", state.get_entity_range(&occupant.0.unwrap()).unwrap());
         // Value
-        println!("\t\t{:?}", state.get_entity_value(&occupant.0.unwrap()).unwrap());
+        println!("\t{:?}", state.get_entity_value(&occupant.0.unwrap()).unwrap());
         // Last Used
-        println!("\t\t{:?}", state.get_entity_last_used(&occupant.0.unwrap()).unwrap());
+        println!("\t{:?}", state.get_entity_last_used(&occupant.0.unwrap()).unwrap());
         // Active
-        println!("\t\t{:?}", state.get_entity_active(&occupant.0.unwrap()).unwrap());
+        println!("\t{:?}", state.get_entity_active(&occupant.0.unwrap()).unwrap());
 
 
     }
