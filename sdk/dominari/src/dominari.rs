@@ -28,6 +28,10 @@ impl Dominari {
         }
     }
 
+    pub fn id() -> Pubkey {
+        return dominarisystems::id();
+    }
+
     pub fn get_system_signer(&self) -> Pubkey {
         Pubkey::find_program_address(&[b"System_Signer"], &dominarisystems::id()).0
     }
@@ -732,3 +736,4 @@ pub struct BlueprintConfig {
 
 pub use dominarisystems::component::*;
 pub use dominarisystems::state::*;
+pub use dominarisystems::event::*;

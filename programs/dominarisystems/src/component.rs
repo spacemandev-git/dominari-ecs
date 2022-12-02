@@ -70,12 +70,12 @@ impl MaxSize for ComponentLocation {
 #[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ComponentFeature{
-    pub feature_id: Option<Pubkey> // Entity ID
+    pub feature_id: Option<u64> // Entity ID
 }
 
 impl MaxSize for ComponentFeature {
     fn get_max_size() -> u64 {
-        return 1+32
+        return 1+8
     }
 }
 

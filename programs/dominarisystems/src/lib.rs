@@ -97,7 +97,7 @@ pub mod dominarisystems {
         // Tile can only be instanced by Admin
         // So we can trust in the input
 
-        // Tile has Metadata, Location, Feature, Owner and Cost components
+        // Tile has Metadata, Location, Feature, Occupant, Owner and Cost components
         let mut components: Vec<SerializedComponent> = vec![];
         let metadata = ComponentMetadata {
             name: format!("Tile ({x}, {y})"),
@@ -127,6 +127,15 @@ pub mod dominarisystems {
             component_key: ctx.accounts.system_signer.components.feature.key(),
             max_size: ComponentFeature::get_max_size(),
             data: feature
+        });
+
+        let occupant = ComponentOccupant {
+            occupant_id: None,
+        }.try_to_vec().unwrap();
+        components.push(SerializedComponent { 
+            component_key: ctx.accounts.system_signer.components.occupant.key(),
+            max_size: ComponentOccupant::get_max_size(),
+            data: occupant
         });
 
         let owner = ComponentOwner {
@@ -253,7 +262,7 @@ pub mod dominarisystems {
         // Modify the Tile Entity with the new Feature
         let tile_feature_component = ctx.accounts.tile_entity.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.feature.key()).unwrap();
         let mut tile_feature:ComponentFeature = ComponentFeature::try_from_slice(&tile_feature_component.data.as_slice()).unwrap();
-        tile_feature.feature_id = Some(ctx.accounts.feature_entity.key());
+        tile_feature.feature_id = Some(entity_id);
         let data = tile_feature.try_to_vec().unwrap();
 
         //msg!("{}", ctx.accounts.system_signer.components.feature.key());
@@ -402,6 +411,7 @@ pub mod dominarisystems {
     }
 
     pub fn spawn_unit(ctx:Context<SpawnUnit>, unit_id: u64) -> Result<()> {
+
         // Check player belongs to payer
         let player_stats_component = ctx.accounts.player.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.player_stats.key()).unwrap();
         let mut player_stats = ComponentPlayerStats::try_from_slice(&player_stats_component.data.as_slice()).unwrap();
@@ -776,6 +786,14 @@ pub mod dominarisystems {
                 defender_active.try_to_vec().unwrap()
             ])?;
     
+
+        emit!(TileAttacked{
+            instance: ctx.accounts.world_instance.instance,
+            attacker: attacker.entity_id,
+            defender: defender.entity_id,
+            damage: dmg
+        });
+
         Ok(())
     }
     //pub fn modify_unit(ctx:Context<ModUnit>) -> Result<()> {}

@@ -35,3 +35,11 @@ pub struct TroopMovement {
     pub to: u64,
     pub unit: u64
 }
+
+#[event]
+pub struct TileAttacked {
+    pub instance:u64,
+    pub attacker: u64,
+    pub defender: u64,
+    pub damage: u64
+}

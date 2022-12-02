@@ -224,7 +224,7 @@ pub struct SystemInitPlayer<'info> {
     pub world_instance: Account<'info, WorldInstance>,    
 
     #[account(mut)]
-    pub player_entity: Box<Account<'info, Entity>>,
+    pub player_entity: AccountInfo<'info>,
 
     #[account(
         mut,

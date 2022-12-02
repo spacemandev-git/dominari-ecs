@@ -1,4 +1,4 @@
-[tranformation]
+[transformation]
 starting_cards = ["Scout"]
 
 [config]
@@ -20,19 +20,19 @@ play_phase = "Lobby"
 [[map.features]]
 x=0
 y=0
-feature="healer"
+feature="Healer"
 
 [[map.features]]
 x=0
 y=7
-feature="healer"
+feature="Healer"
 
 [[map.features]]
 x=7
 y=7
-feature="healer"
+feature="Healer"
 
 [[map.features]]
 x=7
 y=0
-feature="healer"
+feature="Healer"

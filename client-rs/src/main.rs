@@ -2,18 +2,19 @@ use borsh::BorshSerialize;
 use dominari::{solana_sdk::{signature::{Keypair, read_keypair_file}, instruction::Instruction}, dominari::*, universe::SerializedComponent};
 use dominari::{universe::Universe, world::World, dominari::Dominari};
 use serde::Deserialize;
-//use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
 use solana_client_wasm::{solana_sdk::{signer::Signer, transaction::Transaction}, WasmClient};
 use tokio::task::JoinHandle;
 use std::env;
 use std::fs;
 use rand::Rng;
-
+#[macro_use] extern crate prettytable;
 mod state;
+mod repl;
 use crate::state::*;
 
 mod util;
 use crate::util::*;
+use crate::repl::*;
 
 pub const RPC_URL:&str = "http://64.227.14.242:8899";
 
@@ -65,7 +66,11 @@ async fn main() {
             let instance = args.get(2).unwrap().parse::<u64>().unwrap();
             client.dominari.build_gamestate(instance).await;
             println!("Index {:?}", &client.dominari.get_gamestate(instance).index.as_ref());
-        
+        },
+        "game" => {
+            let instance = args.get(2).unwrap().parse::<u64>().unwrap();
+            println!("Game Repl starting....");
+            game_repl(&mut client, instance).await;
         },
         "debug" => {
         }
@@ -94,6 +99,7 @@ pub async fn init_components(client: &Client) {
         let mut ix = client.world.register_component(schema, client.id01.pubkey());
         comp_ixs.append(&mut ix);
     }
+    let mut txs = vec![];
     for comp_ix in comp_ixs.iter() {
         let ix = comp_ix.clone();
         let mut tx = Transaction::new_with_payer(
@@ -101,10 +107,14 @@ pub async fn init_components(client: &Client) {
             Some(&client.id01.pubkey())
         );
         tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
-        send_tx_async(client.rpc.clone(), tx.clone());
+        txs.push(send_tx_async(client.rpc.clone(), tx.clone()));
         //let sig = client.rpc.send_and_confirm_transaction(&tx).await.unwrap().to_string();    
         //println!("Component Registered: {sig}");
     }
+    for tx in txs {
+        tx.await.unwrap();
+    }
+
     println!("Components after registration loop: {:#}", client.world.get_world_config().await.1.components);
 }
 
@@ -335,6 +345,7 @@ pub async fn setup_game(client: &mut Client, path: &String, instance: u64) {
     //println!("Config Found: {:?}", config);
 
     // Instance the game (will instance the world)
+    println!("Instancing game world...");
     let mut create_game_tx = Transaction::new_with_payer(
         &client.dominari.init_game(client.id01.pubkey(), instance, config.config.clone()),
         Some(&client.id01.pubkey())
@@ -348,6 +359,7 @@ pub async fn setup_game(client: &mut Client, path: &String, instance: u64) {
     // Create Map & Tiles & Features
     map(client, instance, config.map).await;
 
+    println!("Creating players...");
     // Create Players (all on the same keypair, but will have different IDs)
     for p in 0..config.config.max_players {
         let mut create_player_tx = Transaction::new_with_payer(
@@ -362,12 +374,16 @@ pub async fn setup_game(client: &mut Client, path: &String, instance: u64) {
     let player_ids = client.dominari.get_gamestate(instance).index.as_ref().unwrap().players.clone();
     println!("Players Created: {:?}", player_ids);
 
+    /*
+    TODO: Change from mapmeta to instance index and then actually check for it 
+    println!("Switching game from Lobby to Play phase...");
     let mut start_game_tx = Transaction::new_with_payer(
         &client.dominari.change_game_state(client.id01.pubkey(), instance, player_ids.get(0).unwrap().clone(), PlayPhase::Play),
         Some(&client.id01.pubkey())
     );
     start_game_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
     client.rpc.send_and_confirm_transaction(&start_game_tx).await.unwrap();
+    */
     println!("Game Started!");
 }
 
@@ -383,8 +399,9 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
     init_map_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
     client.rpc.send_and_confirm_transaction(&init_map_tx).await.unwrap();
     
+    println!("Initializing tiles...");
     // Initalize the Tiles
-    let mut tile_txs = vec![];
+    let mut tile_txs:Vec<JoinHandle<()>> = vec![];
     for row in 0..map.mapmeta.max_x {
         for col in 0..map.mapmeta.max_y {
             let mut init_tile_tx = Transaction::new_with_payer(
@@ -392,7 +409,7 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
                 Some(&client.id01.pubkey())
             );
             init_tile_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
-            //client.rpc.send_and_confirm_transaction(&init_tile_tx).await.unwrap();
+            //send_tx_skip_preflight(init_tile_tx);
             tile_txs.push(send_tx_async(client.rpc.clone(), init_tile_tx.clone()));
         }
     }
@@ -404,9 +421,9 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
     client.dominari.build_gamestate(instance).await;
 
     // Init the Features
+    println!("Initializing features...");
     for feature in map.features {
-        //let tile = client.dominari.get_gamestate(instance).get_tile(&client.dominari.get_instance_index(instance).await.tiles, feature.x, feature.y).unwrap();
-        let tile = client.dominari.get_gamestate(instance).get_tile(&client.dominari.get_gamestate(instance).index.as_ref().unwrap().tiles, feature.x, feature.y).unwrap();
+        let tile = client.dominari.get_gamestate(instance).get_tile(feature.x, feature.y).unwrap();
         //println!("Tile ({},{}) is {}", feature.x, feature.y, tile.0);
 
         let blueprint = Dominari::get_blueprint_key(&feature.feature);
@@ -414,32 +431,9 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
         feature_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
         
         //let rpc:RpcClient = RpcClient::new(RPC_URL); rpc.send_transaction_with_config(&feature_tx, RpcSendTransactionConfig {skip_preflight: true, .. Default::default()}).unwrap();
+        //send_tx_skip_preflight(feature_tx);
+        
         let sig = client.rpc.send_and_confirm_transaction(&feature_tx).await.unwrap();
         println!("Feature {} created at ({},{}): {}", feature.feature, feature.x, feature.y, sig);
     }   
 }
-
-
-/*
-## Scripts
-    -> Deploy & Register
-        - Deploy Universe, World, Systems
-        -> Initalize World with Universe
-        -> Register Components to Dominari World
-        -> Register DominariSystems for Each of the Registered Components
-
-    -> Setup Features, Units, Mods
-        -> Register Blueprints as Accounts on DominariSystems for each Feature, Unit, Mod
-
-    -> Setup Game
-        -> Instance a Game (will instance a world underneath)
-        -> Instance a map of a given grid size
-        -> Instance Tiles
-
-    -> Register Player
-        -> Create Player Entity
-        -> Init Player by giving them a starting Unit Blueprint as a card
-
-    -> Play Sim 01
-        -> Two players spawn units and use features while attempting to kill other player off
-*/
