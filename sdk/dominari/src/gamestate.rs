@@ -4,7 +4,7 @@ use anchor_lang::{prelude::Pubkey, Key, AnchorDeserialize};
 use dominarisystems::{account::InstanceIndex, component::*};
 use ecs::account::Entity;
 use solana_client_wasm::WasmClient;
-use crate::{ util::*, dominari::ComponentSchema, universe::Universe};
+use crate::{ util::*, dominari::{ComponentSchema, Blueprint}, universe::Universe};
 
 #[derive(Clone)]
 pub struct GameState {
@@ -14,17 +14,20 @@ pub struct GameState {
     pub index: Option<InstanceIndex>,
     pub entities: Option<HashMap<u64, Entity>>,
     pub schemas: ComponentSchema,
+    pub blueprints: Blueprint,
 }
 
 impl GameState {
     pub fn new(client: WasmClient, world: Pubkey, instance:u64) -> Self {
+        let blueprints = Blueprint::new();
         GameState { 
             client,
             world,
             instance,
             index: None,
             entities: None,
-            schemas: ComponentSchema::new(&world)
+            schemas: ComponentSchema::new(&world),
+            blueprints,
         }
     }
 

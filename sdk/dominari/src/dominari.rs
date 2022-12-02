@@ -734,6 +734,38 @@ pub struct BlueprintConfig {
     pub offchain_metadata: Option<dominarisystems::component::ComponentOffchainMetadata>,
 }
 
+#[derive(Clone, Debug)]
+pub struct Blueprint {
+    map: bimap::BiMap<String, Pubkey>
+}
+
+impl Blueprint {
+    pub fn new() -> Self {
+        Blueprint {
+           map: bimap::BiMap::<String, Pubkey>::new() 
+        }
+    }
+
+    pub fn insert_blueprint_strings(&mut self, blueprints: &Vec<String>) {
+        for print in blueprints {
+            let key = Pubkey::find_program_address(&[
+                b"Blueprint",
+                print.as_bytes().as_ref()
+            ], &dominarisystems::id()).0;
+            self.map.insert(print.clone(), key);
+        }   
+    }
+
+    pub fn get_blueprint_by_key(&self, key: &Pubkey) -> Option<String> {
+        self.map.get_by_right(key).cloned()
+    }
+
+    pub fn get_blueprint_by_name(&self, name: &String) -> Option<Pubkey> {
+        self.map.get_by_left(name).cloned()
+    }
+    
+}
+
 pub use dominarisystems::component::*;
 pub use dominarisystems::state::*;
 pub use dominarisystems::event::*;

@@ -9,9 +9,20 @@ use futures::lock::Mutex;
 use crate::*;
 
 pub async fn game_repl(client: &mut Client, instance: u64) {
+    // Build Gamestate
     client.dominari.build_gamestate(instance).await;
-    //println!("Game Index: {:?}", client.dominari.get_gamestate(instance).index.as_ref().unwrap());
-
+    // Grab all blueprints from various folders
+    let mut blueprint_names: Vec<String> = vec![];
+    let blueprint_paths = vec!["blueprints/features", "blueprints/mods", "blueprints/units"];
+    for bpath in blueprint_paths {
+        for path in fs::read_dir(bpath).unwrap().into_iter() {
+            let pathspec = path.as_ref().unwrap().path().display().to_string().replace(".toml", "").to_string();
+            let name = pathspec.split("/").collect::<Vec<&str>>().pop().unwrap();
+            blueprint_names.push(name.to_string());
+        }
+    }
+    client.dominari.get_mut_gamestate(instance).blueprints.insert_blueprint_strings(&blueprint_names);
+    
     // Start Event Listeners
     println!("Starting event listners...");
     let cluster = Cluster::Custom(
@@ -165,7 +176,12 @@ pub fn players_table(state: &GameState) -> Table {
             player_stats.name,
             player_stats.score.to_string(),
             player_stats.kills.to_string(),
-            format!("{:?}", player_stats.cards)
+            format!("{:?}",
+                player_stats.cards
+                    .iter()
+                    .map(|key| {state.blueprints.get_blueprint_by_key(key).unwrap()})
+                    .collect::<Vec<String>>()
+            )
         ]);
     }
     table

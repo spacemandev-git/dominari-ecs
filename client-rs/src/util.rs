@@ -10,6 +10,7 @@ pub fn send_tx_async(client: WasmClient, tx: Transaction) -> tokio::task::JoinHa
     })
 }
 
+#[allow(dead_code)]
 pub fn send_tx_skip_preflight(tx: Transaction) {
     let rpc = RpcClient::new(RPC_URL);
     rpc.send_transaction_with_config(&tx, RpcSendTransactionConfig { skip_preflight: true, ..Default::default() }).unwrap();
