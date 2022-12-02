@@ -1,3 +1,4 @@
+use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use borsh::BorshSerialize;
 use dominari::{solana_sdk::{signature::{Keypair, read_keypair_file}, instruction::Instruction}, dominari::*, universe::SerializedComponent};
 use dominari::{universe::Universe, world::World, dominari::Dominari};
@@ -22,7 +23,7 @@ pub const RPC_URL:&str = "http://64.227.14.242:8899";
 async fn main() {
     let mut client: Client = Client {
         id01: read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).unwrap(),
-        rpc: WasmClient::new(RPC_URL),
+        rpc: WasmClient::new_with_commitment(RPC_URL, CommitmentConfig::confirmed()),
         universe: Universe::new(RPC_URL),
         world: World::new(RPC_URL, dominari::world::World::get_default_program_id()),
         dominari: Dominari::new(RPC_URL, dominari::world::World::get_default_program_id()),

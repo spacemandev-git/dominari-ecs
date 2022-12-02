@@ -44,6 +44,12 @@ pub enum ComponentErrors {
     #[msg("Trying to interact with a dead unit")]
     UnitDead,
 
+    #[msg("Defender doesn't have a health bar")]
+    NoHealthComponent,
+
     #[msg("Unit out of range")]
     OutOfRange,
+
+    #[msg("Invalid Location")]
+    InvalidLocation,
 }

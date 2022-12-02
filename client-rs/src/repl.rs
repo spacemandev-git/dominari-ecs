@@ -54,6 +54,8 @@ pub async fn game_repl(client: &mut Client, instance: u64) {
                 let mut dom = nus_client.lock().await;
                 dom.get_mut_gamestate(instance).update_entity(x.tile).await;
                 dom.get_mut_gamestate(instance).update_entity(x.unit).await;
+                let player = dom.get_mut_gamestate(instance).get_entity_owner(&x.unit).unwrap().player.unwrap();
+                dom.get_mut_gamestate(instance).update_entity(player).await;
                 dom.get_mut_gamestate(instance).update_instance_index().await;
             }
         }
@@ -97,7 +99,9 @@ pub async fn game_repl(client: &mut Client, instance: u64) {
                 let mut dom = atk_client.lock().await;
                 dom.get_mut_gamestate(instance).update_entity(x.attacker).await;
                 dom.get_mut_gamestate(instance).update_entity(x.defender).await;
+                dom.get_mut_gamestate(instance).update_entity(x.defending_tile).await;
                 dom.get_mut_gamestate(instance).update_instance_index().await;
+                println!("Damage dealt: {}", x.damage);
             }
         }
     });
@@ -109,10 +113,68 @@ pub async fn game_repl(client: &mut Client, instance: u64) {
         std::io::stdin().read_line(&mut input).unwrap();
         let args:Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
         match args.get(0).unwrap().as_str() {
-            // Spawn Unit, Move Unit, Attack Unit
             // Use Features
-            // Print (Players, Tile, Feature, Unit)
-
+            "time" => {
+                println!("Slot: {}", client.rpc.get_slot().await.unwrap());
+            }
+            "refresh" => {
+                dominari.lock().await.get_mut_gamestate(instance).load_state().await;
+            }
+            "tile" => {
+                // tile <x> <y>
+                let x:u8 = args.get(1).unwrap().parse().unwrap();
+                let y:u8 = args.get(2).unwrap().parse().unwrap();
+                tile_info(
+                    dominari.lock().await.state.get(&instance).unwrap(),
+                    x,
+                    y
+                );
+            }
+            "attack" => {
+                // attack <from x> <from y> <to x> <to y>
+                let from_x:u8 = args.get(1).unwrap().parse().unwrap();
+                let from_y:u8 = args.get(2).unwrap().parse().unwrap();
+                let to_x:u8 = args.get(3).unwrap().parse().unwrap();
+                let to_y:u8 = args.get(4).unwrap().parse().unwrap();
+                attack_tile(
+                    client,
+                    dominari.lock().await.state.get(&instance).unwrap(),
+                    from_x,
+                    from_y,
+                    to_x,
+                    to_y
+                ).await;
+            }
+            "move" => {
+                // move <from x> <from y> <to x> <to y>
+                let from_x:u8 = args.get(1).unwrap().parse().unwrap();
+                let from_y:u8 = args.get(2).unwrap().parse().unwrap();
+                let to_x:u8 = args.get(3).unwrap().parse().unwrap();
+                let to_y:u8 = args.get(4).unwrap().parse().unwrap();
+                move_unit(
+                    client,
+                    dominari.lock().await.state.get(&instance).unwrap(),
+                    from_x,
+                    from_y,
+                    to_x,
+                    to_y
+                ).await;
+            }
+            "spawn" => {
+                // spawn <player_id> <x> <y> <troop/mod name>
+                let player_id:u64 = args.get(1).unwrap().parse().unwrap();
+                let x:u8 = args.get(2).unwrap().parse().unwrap();
+                let y:u8 = args.get(3).unwrap().parse().unwrap();
+                let card = args.get(4).unwrap();
+                spawn(
+                    client,
+                    dominari.lock().await.state.get(&instance).unwrap(),
+                    player_id,
+                    x,
+                    y,
+                    card
+                ).await;
+            }   
             // Print Players
             "players" => {
                 players_table(dominari.lock().await.state.get(&instance).unwrap()).printstd();
@@ -150,12 +212,17 @@ pub fn print_map(state: &GameState) -> Table {
             // Show feature name
             if feature.0.is_some() {
                 let metadata = state.get_entity_metadata(&feature.0.unwrap()).unwrap();
-                tile_info += format!("\nFeat: {}", metadata.name).as_str();
+                tile_info += format!("\n{}", metadata.name).as_str();
             }
             // Show unit name
             if occupant.0.is_some() {
                 let metadata = state.get_entity_metadata(&occupant.0.unwrap()).unwrap();
-                tile_info += format!("\nUnit: {}", metadata.name).as_str();
+                tile_info += format!("\n{}", metadata.name).as_str();
+
+                // Print Unit Owner underneath
+                let owner = state.get_entity_owner(&occupant.0.unwrap()).unwrap();
+                let player = state.get_entity_player_stats(&owner.player.unwrap()).unwrap();
+                tile_info += format!("\n{}", player.name).as_str();
             }
             row.add_cell(Cell::new(tile_info.as_str()));
         }
@@ -185,4 +252,113 @@ pub fn players_table(state: &GameState) -> Table {
         ]);
     }
     table
+}
+
+pub fn tile_info(state: &GameState, x:u8, y:u8) {
+    let tile = state.get_tile(x,y).unwrap();
+    let feature = state.get_feature_on_tile(tile.0);
+    let occupant  = state.get_unit_on_tile(tile.0);
+
+    println!("\n Tile: ({x},{y}) ID {}", tile.0);
+    if feature.0.is_some() {
+        println!("\tFeature:");
+        // Feature should print various components based on type of Feature TODO
+        let metadata = state.get_entity_metadata(&feature.0.unwrap()).unwrap();
+        println!("\t\t{}", metadata.name);
+    }
+    // Show unit name
+    if occupant.0.is_some() {
+        println!("\tUnit:");
+        let metadata = state.get_entity_metadata(&occupant.0.unwrap()).unwrap();
+        println!("\t\t{}", metadata.name);
+
+        // Print Unit Owner underneath
+        let owner = state.get_entity_owner(&occupant.0.unwrap()).unwrap();
+        let player = state.get_entity_player_stats(&owner.player.unwrap()).unwrap();
+        println!("\t\t{}", player.name);
+
+        // Health
+        println!("\t\t{:?}", state.get_entity_health(&occupant.0.unwrap()).unwrap());
+        // Damage
+        println!("\t\t{:?}", state.get_entity_damage(&occupant.0.unwrap()).unwrap());
+        // Class
+        println!("\t\t{:?}", state.get_entity_troop_class(&occupant.0.unwrap()).unwrap());
+        // Range
+        println!("\t\t{:?}", state.get_entity_range(&occupant.0.unwrap()).unwrap());
+        // Value
+        println!("\t\t{:?}", state.get_entity_value(&occupant.0.unwrap()).unwrap());
+        // Last Used
+        println!("\t\t{:?}", state.get_entity_last_used(&occupant.0.unwrap()).unwrap());
+        // Active
+        println!("\t\t{:?}", state.get_entity_active(&occupant.0.unwrap()).unwrap());
+
+
+    }
+}
+
+pub async fn move_unit(client: &Client, state: &GameState, from_x: u8, from_y: u8, to_x: u8, to_y: u8) {
+    let from_tile = state.get_tile(from_x, from_y).unwrap();
+    let to_tile = state.get_tile(to_x, to_y).unwrap();
+    let mut move_unit_tx = Transaction::new_with_payer(
+        client.dominari.move_unit(
+            client.id01.pubkey(),
+            state.instance,
+            from_tile.0,
+            to_tile.0
+        ).as_slice(),
+        Some(&client.id01.pubkey())
+    );
+    move_unit_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
+    //client.rpc.send_and_confirm_transaction(&move_unit_tx).await.unwrap();
+    send_tx_skip_preflight(move_unit_tx);
+}
+
+// Doesn't support attacking Features yet.
+pub async fn attack_tile(client: &Client, state: &GameState, from_x: u8, from_y: u8, to_x: u8, to_y: u8) {
+    let from_tile = state.get_tile(from_x, from_y).unwrap();
+    let to_tile = state.get_tile(to_x, to_y).unwrap();
+    
+    let attacker = state.get_entity_occupant(&from_tile.0).unwrap().occupant_id.unwrap();
+    let defender = state.get_entity_occupant(&to_tile.0).unwrap().occupant_id.unwrap();
+
+
+    let mut atk_tile_tx = Transaction::new_with_payer(
+        client.dominari.attack_tile(
+            client.id01.pubkey(),
+            state.instance,
+            attacker,
+            defender,
+            to_tile.0
+        ).as_slice(),
+        Some(&client.id01.pubkey())
+    );
+    atk_tile_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
+    //client.rpc.send_and_confirm_transaction(&atk_tile_tx).await.unwrap();
+    send_tx_skip_preflight(atk_tile_tx);
+}
+
+pub async fn spawn(client: &Client, state: &GameState, player_id:u64, x:u8, y:u8, card: &String) {
+    let tile = state.get_tile(x, y).unwrap();
+    let occupant = state.get_entity_occupant(&tile.0).unwrap().occupant_id;
+    // Check if Tile is EMPTY == Use SPAWN UNIT
+    // If tile is OCCUPIED == USE MODIFY UNIT
+
+    if occupant.is_none() {
+        // SPAWN UNIT
+        let mut spawn_unit_tx = Transaction::new_with_payer(
+            client.dominari.spawn_unit(
+                client.id01.pubkey(),
+                state.instance,
+                player_id,
+                tile.0,
+                state.blueprints.get_blueprint_by_name(card).unwrap()
+            ).as_slice(),
+            Some(&client.id01.pubkey())
+        );
+        spawn_unit_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
+        client.rpc.send_and_confirm_transaction(&spawn_unit_tx).await.unwrap();
+    } else {
+        // Check if unit belongs to the player_id
+        // If it does, play the modify_unit tx
+    }
 }

@@ -1,5 +1,5 @@
 [transformation]
-starting_cards = ["Scout"]
+starting_cards = ["Scout", "Scout", "Scout"]
 
 [config]
 max_players = 2

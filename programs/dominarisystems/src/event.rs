@@ -41,5 +41,6 @@ pub struct TileAttacked {
     pub instance:u64,
     pub attacker: u64,
     pub defender: u64,
+    pub defending_tile: u64,
     pub damage: u64
 }

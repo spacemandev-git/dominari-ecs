@@ -550,7 +550,7 @@ impl Dominari {
     }
 
     // Attack Unit
-    pub fn attack_tile(&self, payer: Pubkey, instance: u64, attacker_id: u64, defender_id: u64) -> Vec<Instruction> {
+    pub fn attack_tile(&self, payer: Pubkey, instance: u64, attacker_id: u64, defender_id: u64, defending_tile_id: u64) -> Vec<Instruction> {
         let world_program = self.world;
         let system_signer = self.get_system_signer();
         let world_config = Pubkey::find_program_address(&[
@@ -583,6 +583,12 @@ impl Dominari {
             world_instance.as_ref()
         ], &ecs::id()).0;
 
+        let defending_tile = Pubkey::find_program_address(&[
+            b"Entity".as_ref(),
+            defending_tile_id.to_be_bytes().as_ref(),
+            world_instance.as_ref()
+        ], &ecs::id()).0;
+
         vec![Instruction {
             program_id: dominarisystems::id(),
             accounts: dominarisystems::accounts::AttackTile {
@@ -598,7 +604,8 @@ impl Dominari {
                 world_instance,
 
                 attacker,
-                defender
+                defender,
+                defending_tile,
             }.to_account_metas(Some(true)),
             data: dominarisystems::instruction::AttackTile {}.data()
         }]
@@ -763,7 +770,7 @@ impl Blueprint {
     pub fn get_blueprint_by_name(&self, name: &String) -> Option<Pubkey> {
         self.map.get_by_left(name).cloned()
     }
-    
+
 }
 
 pub use dominarisystems::component::*;

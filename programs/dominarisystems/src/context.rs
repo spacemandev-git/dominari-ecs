@@ -223,6 +223,7 @@ pub struct SystemInitPlayer<'info> {
     pub system_registration: Box<Account<'info, SystemRegistration>>,
     pub world_instance: Account<'info, WorldInstance>,    
 
+    /// CHECK: Created via CPI
     #[account(mut)]
     pub player_entity: AccountInfo<'info>,
 
@@ -442,6 +443,13 @@ pub struct AttackTile <'info> {
         constraint = defender.instance == world_instance.instance
     )]
     pub defender: Box<Account<'info, Entity>>,
+    #[account(
+        mut,
+        constraint = defending_tile.instance == world_instance.instance
+    )]
+    pub defending_tile: Box<Account<'info, Entity>>,
+
+
 }
 
 

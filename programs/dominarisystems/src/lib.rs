@@ -514,7 +514,22 @@ pub mod dominarisystems {
             },
             signer_seeds
         );
-        dominariworld::cpi::req_modify_component(modify_tile_ctx, vec![ctx.accounts.system_signer.components.feature.key()], vec![data])?;
+        dominariworld::cpi::req_modify_component(modify_tile_ctx, vec![ctx.accounts.system_signer.components.occupant.key()], vec![data])?;
+
+        // Update Player Stats to no longer have that card
+        let data = player_stats.try_to_vec().unwrap();
+        let modify_player_ctx = CpiContext::new_with_signer(
+            ctx.accounts.world_program.to_account_info(),
+            dominariworld::cpi::accounts::ModifyComponent {
+                world_config: ctx.accounts.world_config.to_account_info(),
+                entity: ctx.accounts.player.to_account_info(),
+                system: ctx.accounts.system_signer.to_account_info(),
+                system_registration: ctx.accounts.system_registration.to_account_info(),
+                universe: ctx.accounts.universe.to_account_info(),
+            },
+            signer_seeds
+        );
+        dominariworld::cpi::req_modify_component(modify_player_ctx, vec![ctx.accounts.system_signer.components.player_stats.key()], vec![data])?;
 
         emit!(NewUnitSpawned {
             instance: ctx.accounts.world_instance.instance,
@@ -560,7 +575,7 @@ pub mod dominarisystems {
         let clock = Clock::get().unwrap();
         let unit_last_used_component = ctx.accounts.unit.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.last_used.key()).unwrap();
         let mut unit_last_used = ComponentLastUsed::try_from_slice(&unit_last_used_component.data.as_slice()).unwrap();
-        if unit_last_used.last_used != 0 && (unit_last_used.last_used + unit_last_used.recovery) <= clock.slot {
+        if unit_last_used.last_used != 0 && (unit_last_used.last_used + unit_last_used.recovery) >= clock.slot {
             return err!(ComponentErrors::UnitRecovering)
         }
 
@@ -571,7 +586,7 @@ pub mod dominarisystems {
         let to_location_c = ctx.accounts.to.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.location.key()).unwrap();
         let to_location = ComponentLocation::try_from_slice(&to_location_c.data.as_slice()).unwrap();
         
-        let distance:f64 = (((to_location.x - from_location.x).pow(2) + (to_location.y - from_location.y).pow(2)) as f64).sqrt();
+        let distance:f64 = (((to_location.x as f64 - from_location.x as f64).powf(2_f64) + (to_location.y as f64 - from_location.y as f64).powf(2_f64)) as f64).sqrt();
         let unit_range_component = ctx.accounts.unit.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.range.key()).unwrap();
         let unit_range = ComponentRange::try_from_slice(&unit_range_component.data.as_slice()).unwrap();
         if unit_range.movement < distance as u64 {
@@ -670,7 +685,7 @@ pub mod dominarisystems {
         // Check that defender is NOT owned by Payer
         let defender_owner_c = defender.components.iter().find(|&comp| comp.component_key == reference.owner.key()).unwrap();
         let defender_owner = ComponentOwner::try_from_slice(&defender_owner_c.data.as_slice()).unwrap();
-        if defender_owner.owner == Some(ctx.accounts.payer.key()) {
+        if defender_owner.player == attacker_owner.player {
             return err!(ComponentErrors::FriendlyFire)
         }
 
@@ -684,8 +699,11 @@ pub mod dominarisystems {
         if defender_active.active == false {
             return err!(ComponentErrors::UnitDead)
         }
-        let defender_health_c = defender.components.iter().find(|&comp| comp.component_key == reference.health.key()).unwrap();
-        let mut defender_health = ComponentHealth::try_from_slice(&defender_health_c.data.as_slice()).unwrap();
+        let defender_health_c = defender.components.iter().find(|&comp| comp.component_key == reference.health.key());
+        if defender_health_c.is_none() {
+            return err!(ComponentErrors::NoHealthComponent)
+        }
+        let mut defender_health = ComponentHealth::try_from_slice(&defender_health_c.unwrap().data.as_slice()).unwrap();
 
         // Defender must be in Range of Attacker
         let attacker_location_c = attacker.components.iter().find(|&comp| comp.component_key == reference.location.key()).unwrap();
@@ -693,7 +711,7 @@ pub mod dominarisystems {
         let defender_location_c = defender.components.iter().find(|&comp| comp.component_key == reference.location.key()).unwrap();
         let defender_location = ComponentLocation::try_from_slice(&defender_location_c.data.as_slice()).unwrap();
         
-        let distance:f64 = (((defender_location.x - attacker_location.x).pow(2) + (defender_location.y - attacker_location.y).pow(2)) as f64).sqrt();
+        let distance:f64 = (((defender_location.x as f64 - attacker_location.x as f64).powf(2_f64) + (defender_location.y as f64 - attacker_location.y as f64 ).powf(2_f64)) as f64).sqrt();
         let attacker_range_c = attacker.components.iter().find(|&comp| comp.component_key == reference.range.key()).unwrap();
         let attacker_range = ComponentRange::try_from_slice(&attacker_range_c.data.as_slice()).unwrap();
         if distance as u64 > attacker_range.attack_range {
@@ -704,7 +722,7 @@ pub mod dominarisystems {
         let clock = Clock::get().unwrap();
         let attacker_last_used_c = attacker.components.iter().find(|&comp| comp.component_key == reference.last_used.key()).unwrap();
         let mut attacker_last_used = ComponentLastUsed::try_from_slice(&attacker_last_used_c.data.as_slice()).unwrap();
-        if attacker_last_used.last_used != 0 && (attacker_last_used.last_used + attacker_last_used.recovery) <= clock.slot {
+        if attacker_last_used.last_used != 0 && (attacker_last_used.last_used + attacker_last_used.recovery) >= clock.slot {
             return err!(ComponentErrors::UnitRecovering)
         }
         attacker_last_used.last_used = clock.slot;        
@@ -728,7 +746,7 @@ pub mod dominarisystems {
             signer_seeds
         );
         dominariworld::cpi::req_modify_component(modify_attacker_ctx, vec![
-                ctx.accounts.system_signer.components.last_used.key(),
+                reference.last_used.key(),
             ],
             vec![
                 attacker_last_used.try_to_vec().unwrap(),
@@ -757,9 +775,62 @@ pub mod dominarisystems {
             dmg = attacker_damage.min_damage;
         }
 
-        if dmg > defender_health.health {
+        if dmg >= defender_health.health {
             defender_health.health = 0;
             defender_active.active = false;
+
+            // Modify the defending tile to remove the defender
+            let defending_tile = &ctx.accounts.defending_tile;
+            // Require Defender Location and Defending Tile Location are the same
+            let defending_tile_loc_c = defending_tile.components.iter().find(|&comp| comp.component_key == reference.location.key()).unwrap();
+            let defending_tile_loc = ComponentLocation::try_from_slice(&defending_tile_loc_c.data.as_slice()).unwrap();
+            if defending_tile_loc.x != defender_location.x && defending_tile_loc.y != defender_location.y {
+                return err!(ComponentErrors::InvalidLocation)
+            }
+
+            if defender_metadata.entity_type == EntityType::Feature {
+                let tile_feature_c = defending_tile.components.iter().find(|&comp| comp.component_key == reference.feature.key()).unwrap();
+                let mut tile_feature = ComponentFeature::try_from_slice(&tile_feature_c.data.as_slice()).unwrap();
+                tile_feature.feature_id = None;
+                let modify_tile_ctx = CpiContext::new_with_signer(
+                    ctx.accounts.world_program.to_account_info(),
+                    dominariworld::cpi::accounts::ModifyComponent {
+                        world_config: ctx.accounts.world_config.to_account_info(),
+                        entity: ctx.accounts.defending_tile.to_account_info(),
+                        system: ctx.accounts.system_signer.to_account_info(),
+                        system_registration: ctx.accounts.system_registration.to_account_info(),
+                        universe: ctx.accounts.universe.to_account_info(),
+                    },
+                    signer_seeds
+                );
+                dominariworld::cpi::req_modify_component(modify_tile_ctx, vec![
+                        reference.feature.key(),
+                    ],
+                    vec![
+                        tile_feature.try_to_vec().unwrap(),
+                    ])?;
+            } else {
+                let tile_occupant_c = defending_tile.components.iter().find(|&comp| comp.component_key == reference.occupant.key()).unwrap();
+                let mut tile_occupant = ComponentOccupant::try_from_slice(&tile_occupant_c.data.as_slice()).unwrap();
+                tile_occupant.occupant_id = None;
+                let modify_tile_ctx = CpiContext::new_with_signer(
+                    ctx.accounts.world_program.to_account_info(),
+                    dominariworld::cpi::accounts::ModifyComponent {
+                        world_config: ctx.accounts.world_config.to_account_info(),
+                        entity: ctx.accounts.defending_tile.to_account_info(),
+                        system: ctx.accounts.system_signer.to_account_info(),
+                        system_registration: ctx.accounts.system_registration.to_account_info(),
+                        universe: ctx.accounts.universe.to_account_info(),
+                    },
+                    signer_seeds
+                );
+                dominariworld::cpi::req_modify_component(modify_tile_ctx, vec![
+                        reference.occupant.key(),
+                    ],
+                    vec![
+                        tile_occupant.try_to_vec().unwrap(),
+                    ])?;
+            }
         } else {
             defender_health.health -= dmg;
         }
@@ -791,6 +862,7 @@ pub mod dominarisystems {
             instance: ctx.accounts.world_instance.instance,
             attacker: attacker.entity_id,
             defender: defender.entity_id,
+            defending_tile: ctx.accounts.defending_tile.entity_id,
             damage: dmg
         });
 
