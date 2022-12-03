@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-
+use std::collections::BTreeMap;
 use crate::{account::*, state::GameConfig};
 use crate::component::MaxSize;
 use crate::constant::*;
@@ -31,7 +31,7 @@ pub struct Initialize <'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(name:String, components: Vec<SerializedComponent>)]
+#[instruction(name:String, components: BTreeMap<Pubkey, SerializedComponent>)]
 pub struct RegisterBlueprint <'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -50,7 +50,7 @@ pub struct RegisterBlueprint <'info> {
             name.as_bytes().as_ref()
         ],
         bump,
-        space=8 + STRING_MAX_SIZE as usize + compute_comp_arr_max_size(&components)
+        space= 8 + STRING_MAX_SIZE as usize + compute_comp_arr_max_size(&components.values().cloned().collect())
     )]
     pub blueprint: Account<'info, Blueprint>,
 }
@@ -309,6 +309,7 @@ pub struct ChangeGameState<'info> {
     pub map: Box<Account<'info, Entity>>,
 
     #[account(
+        mut,
         seeds=[
             b"Instance_Index",
             world_instance.key().as_ref()
@@ -406,6 +407,15 @@ pub struct MoveUnit<'info> {
         constraint = unit.instance == world_instance.instance
     )]
     pub unit: Box<Account<'info, Entity>>,
+
+    #[account(
+        seeds=[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ],
+        bump,
+    )]
+    pub instance_index: Box<Account<'info, InstanceIndex>>,
 }
 
 #[derive(Accounts)]
@@ -448,8 +458,15 @@ pub struct AttackTile <'info> {
         constraint = defending_tile.instance == world_instance.instance
     )]
     pub defending_tile: Box<Account<'info, Entity>>,
-
-
+    
+    #[account(
+        seeds=[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ],
+        bump,
+    )]
+    pub instance_index: Box<Account<'info, InstanceIndex>>,
 }
 
 
@@ -457,7 +474,7 @@ pub struct AttackTile <'info> {
 pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize {
     let mut max_size:usize = 0;
     for comp in components {
-        max_size += comp.max_size as usize + 44; // 44 is the size of the additional fields in Serialized Comp (pubkey, max_size, and empty vec)
+        max_size += comp.max_size as usize + 44; // 44 is the size of the additional fields in Serialized Comp (pubkey, max_size, and empty BTreeMap)
     }
     return max_size;
 }

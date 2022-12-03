@@ -144,121 +144,121 @@ impl GameState {
     /** COMPONENT GETTERS */
     pub fn get_entity_metadata(&self, entity_id: &u64) -> Option<ComponentMetadata> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().metadata.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().metadata.key());
         if sc.is_none() { return None };
         Some(ComponentMetadata::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_mapmeta(&self, entity_id: &u64) -> Option<ComponentMapMeta> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().mapmeta.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().mapmeta.key());
         if sc.is_none() { return None };
         Some(ComponentMapMeta::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_location(&self, entity_id: &u64) -> Option<ComponentLocation> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().location.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().location.key());
         if sc.is_none() { return None };
         Some(ComponentLocation::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_feature(&self, entity_id: &u64) -> Option<ComponentFeature> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().feature.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().feature.key());
         if sc.is_none() { return None };
         Some(ComponentFeature::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_owner(&self, entity_id: &u64) -> Option<ComponentOwner> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().owner.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().owner.key());
         if sc.is_none() { return None };
         Some(ComponentOwner::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_value(&self, entity_id: &u64) -> Option<ComponentValue> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().value.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().value.key());
         if sc.is_none() { return None };
         Some(ComponentValue::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_occupant(&self, entity_id: &u64) -> Option<ComponentOccupant> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().occupant.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().occupant.key());
         if sc.is_none() { return None };
         Some(ComponentOccupant::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_player_stats(&self, entity_id: &u64) -> Option<ComponentPlayerStats> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().player_stats.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().player_stats.key());
         if sc.is_none() { return None };
         Some(ComponentPlayerStats::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_last_used(&self, entity_id: &u64) -> Option<ComponentLastUsed> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().last_used.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().last_used.key());
         if sc.is_none() { return None };
         Some(ComponentLastUsed::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_feature_rank(&self, entity_id: &u64) -> Option<ComponentFeatureRank> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().feature_rank.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().feature_rank.key());
         if sc.is_none() { return None };
         Some(ComponentFeatureRank::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_range(&self, entity_id: &u64) -> Option<ComponentRange> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().range.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().range.key());
         if sc.is_none() { return None };
         Some(ComponentRange::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_drop_table(&self, entity_id: &u64) -> Option<ComponentDropTable> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().drop_table.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().drop_table.key());
         if sc.is_none() { return None };
         Some(ComponentDropTable::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_uses(&self, entity_id: &u64) -> Option<ComponentUses> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().uses.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().uses.key());
         if sc.is_none() { return None };
         Some(ComponentUses::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_healing_power(&self, entity_id: &u64) -> Option<ComponentHealingPower> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().healing_power.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().healing_power.key());
         if sc.is_none() { return None };
         Some(ComponentHealingPower::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_health(&self, entity_id: &u64) -> Option<ComponentHealth> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().health.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().health.key());
         if sc.is_none() { return None };
         Some(ComponentHealth::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_damage(&self, entity_id: &u64) -> Option<ComponentDamage> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().damage.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().damage.key());
         if sc.is_none() { return None };
         Some(ComponentDamage::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_troop_class(&self, entity_id: &u64) -> Option<ComponentTroopClass> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().troop_class.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().troop_class.key());
         if sc.is_none() { return None };
         Some(ComponentTroopClass::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_active(&self, entity_id: &u64) -> Option<ComponentActive> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().active.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().active.key());
         if sc.is_none() { return None };
         Some(ComponentActive::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_cost(&self, entity_id: &u64) -> Option<ComponentCost> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().cost.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().cost.key());
         if sc.is_none() { return None };
         Some(ComponentCost::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }
     pub fn get_entity_offchain_metadata(&self, entity_id: &u64) -> Option<ComponentOffchainMetadata> {
         let serialized_components = &self.entities.as_ref().unwrap().get(&entity_id).unwrap().components;
-        let sc = serialized_components.iter().find(|&c| c.component_key == self.schemas.key_index.as_ref().unwrap().offchain_metadata.key());
+        let sc = serialized_components.get(&self.schemas.key_index.as_ref().unwrap().offchain_metadata.key());
         if sc.is_none() { return None };
         Some(ComponentOffchainMetadata::try_from_slice(&sc.unwrap().data.as_slice()).unwrap())
     }

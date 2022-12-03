@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use std::collections::BTreeMap;
 
 //use crate::state::*;
 
@@ -24,5 +25,5 @@ pub struct ComponentSchema{
 pub struct SystemRegistration{
     pub system: Pubkey,
     pub instance: u64,
-    pub components: Vec<Pubkey>, //PDA of the Component Schema
+    pub components: BTreeMap<Pubkey, bool>, //PDA of the Component Schema
 }

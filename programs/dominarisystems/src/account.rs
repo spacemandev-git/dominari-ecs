@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use ecs::state::SerializedComponent;
+use std::collections::BTreeMap;
 
 use crate::{state::*, component::MaxSize};
 
@@ -16,7 +17,7 @@ pub struct SystemConfig {
 #[account]
 pub struct Blueprint {
     pub name: String,
-    pub components: Vec<SerializedComponent>
+    pub components: BTreeMap<Pubkey, SerializedComponent>
 }
 
 /**
@@ -33,6 +34,17 @@ pub struct InstanceIndex {
     pub features: Vec<u64>,
     pub units: Vec<u64>,
     pub players: Vec<u64>,
+    pub play_phase: PlayPhase
+}
+
+#[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, PartialEq)]
+pub enum PlayPhase {
+    Lobby,
+    Build,
+    Play,
+    Paused,
+    Finished
 }
 
 /**
@@ -42,6 +54,6 @@ pub struct InstanceIndex {
  */
 impl MaxSize for InstanceIndex {
     fn get_max_size() -> u64 {
-        return 8+4+4+4+4;
+        return 8+4+4+4+4+2;
     }
 }

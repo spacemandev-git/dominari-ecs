@@ -11,7 +11,6 @@ cost_per_tile = 1000
 [map.mapmeta]
 max_x = 8
 max_y = 8
-play_phase = "Lobby"
 
 # Not every tile is defined. 
 # If a tile is *not* defined, it's left as a blank tile

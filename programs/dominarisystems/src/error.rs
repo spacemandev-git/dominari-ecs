@@ -13,6 +13,9 @@ pub enum DominariError {
 
     #[msg("Only players in this game can call this function!")]
     InvalidPlayer,
+
+    #[msg("Game Paused")]
+    GamePaused,
 }
 
 #[error_code]

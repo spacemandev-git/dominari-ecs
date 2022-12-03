@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use std::collections::BTreeMap;
 
 use crate::account::*;
 use crate::constant::*;
@@ -26,7 +27,7 @@ pub struct Initialize<'info>{
     pub world_config: Account<'info, WorldConfig>,
 }
 
-#[derive(Accounts)]
+#[derive(Accounts)] 
 pub struct InstanceWorld<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -144,7 +145,7 @@ pub struct AddComponentsToSystemRegistration <'info> {
     
     #[account(
         mut,
-        realloc = system_registration.to_account_info().data_len() + (components.len()*32),
+        realloc = system_registration.to_account_info().data_len() + (components.len()*32) + components.len(),
         realloc::payer = payer,
         realloc::zero = false,
         seeds=[
@@ -162,7 +163,7 @@ pub struct AddComponentsToSystemRegistration <'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(entity_id:u64, components:Vec<SerializedComponent>)]
+#[instruction(entity_id:u64, components: BTreeMap<Pubkey, SerializedComponent>)]
 pub struct MintEntity<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -186,14 +187,14 @@ pub struct MintEntity<'info> {
     pub system: Signer<'info>,
     // All systems can make any entities they want
     #[account(
-        constraint = system_registration.system.key() == system.key() && check_components_can_be_modified_by_system(&get_pubkeys_from_components(&components), &system_registration.components)
+        constraint = system_registration.system.key() == system.key() && check_sys_registry(&components.keys().cloned().collect(), &system_registration.components)
     )]
     pub system_registration: Account<'info, SystemRegistration>,
     pub universe: Program<'info, Ecs>,     
 }
 
 #[derive(Accounts)]
-#[instruction(components: Vec<SerializedComponent>)]
+#[instruction(components: Vec<(Pubkey, SerializedComponent)>)]
 pub struct AddComponents<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -217,7 +218,7 @@ pub struct AddComponents<'info>{
     // System is allowed to modify the component it's adding
     // System is a signer
     #[account(
-        constraint = check_components_can_be_modified_by_system(&get_pubkeys_from_components(&components), &system_registration.components) && system_registration.system.key() == system.key()
+        constraint = system_registration.system.key() == system.key() && check_sys_registry(&components.iter().map(|tuple| tuple.0.clone() ).collect(), &system_registration.components)
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -249,7 +250,7 @@ pub struct RemoveComponent<'info>{
     // System is allowed to modify the component it's adding
     // System is a signer
     #[account(
-        constraint = check_components_can_be_modified_by_system(&components, &system_registration.components) && system_registration.system.key() == system.key()
+        constraint = system_registration.system.key() == system.key() && check_sys_registry(&components, &system_registration.components)
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -277,7 +278,7 @@ pub struct ModifyComponent<'info>{
     // System is allowed to modify the component it's adding
     // System is a signer
     #[account(
-        constraint = check_components_can_be_modified_by_system(&components, &system_registration.components) && system_registration.system.key() == system.key()
+        constraint = system_registration.system.key() == system.key() && check_sys_registry(&components, &system_registration.components)
     )]
     pub system_registration: Account<'info, SystemRegistration>,
 
@@ -317,25 +318,11 @@ pub struct RemoveEntity<'info>{
 
 /*************************************************UTIL Functions */
 
-pub fn check_components_can_be_modified_by_system(components: &Vec<Pubkey>, system_components: &Vec<Pubkey>) -> bool {
-    let mut pubkeys_found:usize = 0;
-    for component in system_components.iter() {
-        if components.contains(component) {
-            pubkeys_found += 1;
+pub fn check_sys_registry(components: &Vec<Pubkey>, system_components: &BTreeMap<Pubkey, bool>) -> bool {
+    for comp in components {
+        if !system_components.contains_key(comp) {
+            return false;
         }
     }
-
-    if pubkeys_found == components.len() {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-pub fn get_pubkeys_from_components(components: &Vec<SerializedComponent>) -> Vec<Pubkey> {
-    let mut pubkeys = vec![];
-    for comp in components {
-        pubkeys.push(comp.component_key.key());
-    }
-    pubkeys
+    return true;
 }

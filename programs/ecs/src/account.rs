@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use std::collections::BTreeMap;
 use crate::state::*;
 
 
@@ -16,7 +17,7 @@ pub struct Entity {
     pub instance: u64,
     pub world: Pubkey,
     pub world_signer: Pubkey,
-    pub components: Vec<SerializedComponent>,
+    pub components: BTreeMap<Pubkey, SerializedComponent>,
 }
 
 #[account] 

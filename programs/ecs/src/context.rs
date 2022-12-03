@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use std::collections::BTreeMap;
 
 use crate::account::*;
 use crate::state::*;
@@ -36,7 +37,7 @@ pub struct RegisterWorldInstance <'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(entity_id:u64, components: Vec<SerializedComponent>)]
+#[instruction(entity_id:u64, components: BTreeMap<Pubkey,SerializedComponent>)]
 pub struct MintEntity<'info>{
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -47,7 +48,7 @@ pub struct MintEntity<'info>{
     #[account(
         init,
         payer=payer,
-        space=8+8+8+32+32+4+compute_comp_arr_max_size(&components), //It is expected this will get Realloc'd every time a component is added
+        space=8+8+8+32+32+4+compute_comp_arr_max_size(&components.values().cloned().collect()), //It is expected this will get Realloc'd every time a component is added
         seeds = [
             b"Entity",
             entity_id.to_be_bytes().as_ref(),
@@ -69,7 +70,7 @@ pub struct MintEntity<'info>{
 }
 
 #[derive(Accounts)]
-#[instruction(components:Vec<SerializedComponent>)]
+#[instruction(components:Vec<(Pubkey,SerializedComponent)>)]
 pub struct AddComponent<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -77,7 +78,7 @@ pub struct AddComponent<'info> {
 
     #[account(
         mut,
-        realloc = entity.to_account_info().data_len() + compute_comp_arr_max_size(&components),
+        realloc = entity.to_account_info().data_len() + compute_comp_arr_max_size(&components.iter().map(|tuple| tuple.1.clone() ).collect()),
         realloc::payer = payer,
         realloc::zero = true,
         constraint = entity.world_signer.key() == world_signer.key()
@@ -175,12 +176,10 @@ pub fn compute_comp_arr_max_size(components: &Vec<SerializedComponent>) -> usize
     return max_size;
 }
 
-pub fn get_removed_size(components: &Vec<SerializedComponent>, removed_components: &Vec<Pubkey>) -> usize {
+pub fn get_removed_size(components: &BTreeMap<Pubkey, SerializedComponent>, removed_components: &Vec<Pubkey>) -> usize {
     let mut removed_size:usize = 0;
-    for comp in components.iter() {
-        if removed_components.contains(&comp.component_key) {
-            removed_size += comp.max_size as usize + SERIALIZED_COMPONENT_EXTRA_SPACE as usize;
-        }
+    for comp in removed_components {
+        removed_size += components.get(comp).unwrap().max_size as usize + SERIALIZED_COMPONENT_EXTRA_SPACE as usize;
     }
     return removed_size;
 }

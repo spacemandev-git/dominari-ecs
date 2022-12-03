@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use std::collections::BTreeMap;
+
 use ecs::state::SerializedComponent;
 
 declare_id!("H5mieGWWK6qukHoNzbR6ysLxReeQC4JHZcNM6JkPQnm3");
@@ -19,6 +21,8 @@ use event::*;
 
 #[program]
 pub mod dominariworld {
+
+    use std::collections::BTreeMap;
 
     use super::*;
 
@@ -93,11 +97,13 @@ pub mod dominariworld {
     }
 
     pub fn add_components_to_system_registration(ctx:Context<AddComponentsToSystemRegistration>, components:Vec<Pubkey>) -> Result<()> {
-        ctx.accounts.system_registration.components.append(components.clone().as_mut());
+        for comp in components {
+            ctx.accounts.system_registration.components.insert(comp, true);
+        }
         Ok(())
     }
 
-    pub fn mint_entity(ctx:Context<MintEntity>, entity_id: u64, components: Vec<SerializedComponent>) -> Result<()> {
+    pub fn mint_entity(ctx:Context<MintEntity>, entity_id: u64, components: BTreeMap<Pubkey, SerializedComponent>) -> Result<()> {
         let accounts = ecs::cpi::accounts::MintEntity {
             entity: ctx.accounts.entity.to_account_info(),
             payer: ctx.accounts.payer.to_account_info(),
@@ -120,7 +126,7 @@ pub mod dominariworld {
         Ok(())
     }
 
-    pub fn req_add_component(ctx:Context<AddComponents>, components: Vec<SerializedComponent>) -> Result<()> {
+    pub fn req_add_component(ctx:Context<AddComponents>, components: Vec<(Pubkey,SerializedComponent)>) -> Result<()> {
         let accounts = ecs::cpi::accounts::AddComponent {
             payer: ctx.accounts.payer.to_account_info(),
             system_program: ctx.accounts.system_program.to_account_info(),

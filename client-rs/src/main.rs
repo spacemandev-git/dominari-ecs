@@ -1,11 +1,11 @@
-use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
+use anchor_client::solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey};
 use borsh::BorshSerialize;
 use dominari::{solana_sdk::{signature::{Keypair, read_keypair_file}, instruction::Instruction}, dominari::*, universe::SerializedComponent};
 use dominari::{universe::Universe, world::World, dominari::Dominari};
 use serde::Deserialize;
 use solana_client_wasm::{solana_sdk::{signer::Signer, transaction::Transaction}, WasmClient};
 use tokio::task::JoinHandle;
-use std::env;
+use std::{env, collections::BTreeMap};
 use std::fs;
 use rand::Rng;
 #[macro_use] extern crate prettytable;
@@ -137,6 +137,7 @@ pub async fn register_system_for_component(client: &Client, instance:u64) {
     );
     add_comp_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
     client.rpc.send_and_confirm_transaction(&add_comp_tx).await.unwrap();
+    //send_tx_skip_preflight(add_comp_tx);
     println!("Dominari registered for all components!", );
 }
 
@@ -165,155 +166,137 @@ pub async fn register_blueprints(client: &Client, dir: &String) {
         println!("Name: {}", name);
 
         let blueprint: BlueprintConfig = toml::from_str(fs::read_to_string(&path.unwrap().path()).unwrap().as_str()).unwrap();
-        let mut components: Vec<SerializedComponent> = vec![];
-        
+        let mut components: BTreeMap<Pubkey, SerializedComponent> = BTreeMap::new();
+        let reference = schemas.key_index.as_ref().unwrap();
+
         if blueprint.mapmeta.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"metadata".to_string()).clone(),
+            components.insert(reference.metadata, SerializedComponent { 
                 max_size: ComponentMapMeta::get_max_size(), 
                 data:  blueprint.mapmeta.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.location.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"location".to_string()).clone(),
+            components.insert(reference.location, SerializedComponent { 
                 max_size: ComponentLocation::get_max_size(), 
                 data:  blueprint.location.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.feature.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"feature".to_string()).clone(),
+            components.insert(reference.feature, SerializedComponent { 
                 max_size: ComponentFeature::get_max_size(), 
                 data:  blueprint.feature.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.owner.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"owner".to_string()).clone(),
+            components.insert(reference.owner, SerializedComponent { 
                 max_size: ComponentOwner::get_max_size(), 
                 data:  blueprint.owner.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.value.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"value".to_string()).clone(),
+            components.insert(reference.value, SerializedComponent { 
                 max_size: ComponentValue::get_max_size(), 
                 data:  blueprint.value.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.occupant.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"occupant".to_string()).clone(),
+            components.insert(reference.occupant, SerializedComponent { 
                 max_size: ComponentOccupant::get_max_size(), 
                 data:  blueprint.occupant.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.player_stats.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"player_stats".to_string()).clone(),
+            components.insert(reference.player_stats, SerializedComponent { 
                 max_size: ComponentPlayerStats::get_max_size(), 
                 data:  blueprint.player_stats.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.last_used.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"last_used".to_string()).clone(),
+            components.insert(reference.last_used, SerializedComponent { 
                 max_size: ComponentLastUsed::get_max_size(), 
                 data:  blueprint.last_used.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.feature_rank.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"feature_rank".to_string()).clone(),
+            components.insert(reference.feature_rank, SerializedComponent { 
                 max_size: ComponentFeatureRank::get_max_size(), 
                 data:  blueprint.feature_rank.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.range.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"range".to_string()).clone(),
+            components.insert(reference.range, SerializedComponent { 
                 max_size: ComponentRange::get_max_size(), 
                 data:  blueprint.range.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.drop_table.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"drop_table".to_string()).clone(),
+            components.insert(reference.drop_table, SerializedComponent { 
                 max_size: ComponentDropTable::get_max_size(), 
                 data:  blueprint.drop_table.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.uses.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"uses".to_string()).clone(),
+            components.insert(reference.uses, SerializedComponent { 
                 max_size: ComponentUses::get_max_size(), 
                 data:  blueprint.uses.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.healing_power.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"healing_power".to_string()).clone(),
+            components.insert(reference.healing_power, SerializedComponent { 
                 max_size: ComponentHealingPower::get_max_size(), 
                 data:  blueprint.healing_power.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.health.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"health".to_string()).clone(),
+            components.insert(reference.health, SerializedComponent { 
                 max_size: ComponentHealth::get_max_size(), 
                 data:  blueprint.health.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.damage.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"damage".to_string()).clone(),
+            components.insert(reference.damage, SerializedComponent { 
                 max_size: ComponentDamage::get_max_size(), 
                 data:  blueprint.damage.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.troop_class.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"troop_class".to_string()).clone(),
+            components.insert(reference.troop_class, SerializedComponent { 
                 max_size: ComponentTroopClass::get_max_size(), 
                 data:  blueprint.troop_class.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.active.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"active".to_string()).clone(),
+            components.insert(reference.active, SerializedComponent { 
                 max_size: ComponentActive::get_max_size(), 
                 data:  blueprint.active.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.cost.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"cost".to_string()).clone(),
+            components.insert(reference.cost, SerializedComponent { 
                 max_size: ComponentCost::get_max_size(), 
                 data:  blueprint.cost.as_ref().unwrap().try_to_vec().unwrap()
             });
         }
 
         if blueprint.offchain_metadata.is_some() {
-            components.push(SerializedComponent { 
-                component_key: schemas.get_component_pubkey(&"offchain_metadata".to_string()).clone(),
+            components.insert(reference.offchain_metadata, SerializedComponent { 
                 max_size: ComponentOffchainMetadata::get_max_size(), 
                 data:  blueprint.offchain_metadata.as_ref().unwrap().try_to_vec().unwrap()
             });
@@ -375,8 +358,6 @@ pub async fn setup_game(client: &mut Client, path: &String, instance: u64) {
     let player_ids = client.dominari.get_gamestate(instance).index.as_ref().unwrap().players.clone();
     println!("Players Created: {:?}", player_ids);
 
-    /*
-    TODO: Change from mapmeta to instance index and then actually check for it 
     println!("Switching game from Lobby to Play phase...");
     let mut start_game_tx = Transaction::new_with_payer(
         &client.dominari.change_game_state(client.id01.pubkey(), instance, player_ids.get(0).unwrap().clone(), PlayPhase::Play),
@@ -384,7 +365,7 @@ pub async fn setup_game(client: &mut Client, path: &String, instance: u64) {
     );
     start_game_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
     client.rpc.send_and_confirm_transaction(&start_game_tx).await.unwrap();
-    */
+    //send_tx_skip_preflight(start_game_tx);
     println!("Game Started!");
 }
 
@@ -399,7 +380,8 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
     );
     init_map_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
     client.rpc.send_and_confirm_transaction(&init_map_tx).await.unwrap();
-    
+    //send_tx_skip_preflight(init_map_tx);
+
     println!("Initializing tiles...");
     // Initalize the Tiles
     let mut tile_txs:Vec<JoinHandle<()>> = vec![];

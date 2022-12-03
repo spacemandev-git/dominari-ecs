@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::hash::*;
-
+use std::collections::BTreeMap;
 
 pub mod account;
 pub mod context;
@@ -10,7 +10,7 @@ pub mod event;
 pub mod component;
 pub mod state;
 
-//use account::*;
+use account::*;
 use context::*;
 use constant::*;
 use error::*;
@@ -35,13 +35,14 @@ pub mod dominarisystems {
         Ok(())
     }
 
-    pub fn register_blueprint(ctx:Context<RegisterBlueprint>, name:String, components: Vec<SerializedComponent>) -> Result<()> {
+    pub fn register_blueprint(ctx:Context<RegisterBlueprint>, name:String, components: BTreeMap<Pubkey, SerializedComponent>) -> Result<()> {
         ctx.accounts.blueprint.name = name;
         ctx.accounts.blueprint.components = components;
         Ok(())
     }
 
     pub fn system_initalize_map(ctx:Context<SystemInitMap>, entity_id:u64, max_x: u8, max_y: u8) -> Result<()> {
+        let reference = &ctx.accounts.system_signer.components;
         let system_signer_seeds:&[&[u8]] = &[
             b"System_Signer",
             &[*ctx.bumps.get("system_signer").unwrap()]
@@ -63,26 +64,24 @@ pub mod dominarisystems {
             signer_seeds
         );
 
-        let mut components: Vec<SerializedComponent> = vec![];
+        let mut components: BTreeMap<Pubkey, SerializedComponent> = BTreeMap::new();
         // Map has Metadata and MapMeta Components
         let metadata_component = ComponentMetadata {
             name: format!("Map ({:#})", ctx.accounts.world_instance.instance),
             entity_type: EntityType::Map,
             world_instance: ctx.accounts.world_instance.key(),
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.metadata.key(), 
+        components.insert(reference.metadata.key(), SerializedComponent { 
             max_size: ComponentMetadata::get_max_size(), 
             data:  metadata_component
         });
 
+
         let mapmeta_component = ComponentMapMeta {
             max_x,
             max_y,
-            play_phase: PlayPhase::Lobby
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.mapmeta.key(), 
+        components.insert(reference.mapmeta.key(), SerializedComponent { 
             max_size: ComponentMapMeta::get_max_size(), 
             data: mapmeta_component 
         });
@@ -96,16 +95,16 @@ pub mod dominarisystems {
     pub fn system_init_tile(ctx:Context<SystemInitTile>, entity_id:u64, x:u8, y:u8, cost:u64) -> Result<()> {
         // Tile can only be instanced by Admin
         // So we can trust in the input
+        let reference = &ctx.accounts.system_signer.components;
 
         // Tile has Metadata, Location, Feature, Occupant, Owner and Cost components
-        let mut components: Vec<SerializedComponent> = vec![];
+        let mut components: BTreeMap<Pubkey, SerializedComponent> = BTreeMap::new();
         let metadata = ComponentMetadata {
             name: format!("Tile ({x}, {y})"),
             entity_type: EntityType::Tile,
             world_instance: ctx.accounts.world_instance.key(),
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.metadata.key(),
+        components.insert(reference.metadata.key(), SerializedComponent { 
             max_size: ComponentMetadata::get_max_size(),
             data: metadata
         });
@@ -114,8 +113,7 @@ pub mod dominarisystems {
             x,
             y,
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.location.key(),
+        components.insert(reference.location.key(), SerializedComponent { 
             max_size: ComponentLocation::get_max_size(),
             data: location
         });
@@ -123,8 +121,7 @@ pub mod dominarisystems {
         let feature = ComponentFeature {
             feature_id: None,
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.feature.key(),
+        components.insert(reference.feature.key(), SerializedComponent { 
             max_size: ComponentFeature::get_max_size(),
             data: feature
         });
@@ -132,8 +129,7 @@ pub mod dominarisystems {
         let occupant = ComponentOccupant {
             occupant_id: None,
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.occupant.key(),
+        components.insert(reference.occupant.key(), SerializedComponent { 
             max_size: ComponentOccupant::get_max_size(),
             data: occupant
         });
@@ -142,8 +138,7 @@ pub mod dominarisystems {
             owner: Some(ctx.accounts.payer.key()),
             player: None,
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.owner.key(),
+        components.insert(reference.owner.key(), SerializedComponent { 
             max_size: ComponentOwner::get_max_size(),
             data: owner
         });
@@ -151,8 +146,7 @@ pub mod dominarisystems {
         let cost_component = ComponentCost {
             lamports: cost,
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.cost.key(),
+        components.insert(reference.cost.key(), SerializedComponent { 
             max_size: ComponentCost::get_max_size(),
             data: cost_component
         });
@@ -185,8 +179,10 @@ pub mod dominarisystems {
     
     pub fn system_instance_feature(ctx:Context<SystemInstanceFeature>, entity_id: u64) -> Result<()> {
         // Check to make sure tile can be modified by payer
-        let tile_owner_component = ctx.accounts.tile_entity.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.owner.key()).unwrap();
+        let reference = &ctx.accounts.system_signer.components;
+        let tile_owner_component = ctx.accounts.tile_entity.components.get(&reference.owner).unwrap();
         let tile_owner:ComponentOwner = ComponentOwner::try_from_slice(&tile_owner_component.data.as_slice()).unwrap();
+        
         if tile_owner.owner.unwrap().key() != ctx.accounts.payer.key() {
             return err!(ComponentErrors::InvalidOwner)
         }
@@ -194,28 +190,26 @@ pub mod dominarisystems {
         // TODO: Check Blueprint 'cost' component and transfer that fee to build the Feature
 
         // Create Feature entity
-        let mut components = vec![];
+        let mut components: BTreeMap<Pubkey, SerializedComponent> = BTreeMap::new();
         // Feature has Metadata, Location, Owner, Active, and ..Blueprint Components
         let metadata_component = ComponentMetadata {
             name: ctx.accounts.blueprint.name.clone(),
             entity_type: EntityType::Feature,
             world_instance: ctx.accounts.world_instance.key(),
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.metadata.key(), 
+        components.insert(reference.metadata.key(), SerializedComponent { 
             max_size: ComponentMetadata::get_max_size(), 
             data:  metadata_component
         });
         // Just copy the Tile Location component
-        let tile_location = ctx.accounts.tile_entity.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.location.key()).unwrap();
-        components.push(tile_location.clone());
+        let tile_location = ctx.accounts.tile_entity.components.get(&reference.location).unwrap();
+        components.insert(reference.location.key(), tile_location.clone());
         
         let owner = ComponentOwner {
             owner: tile_owner.owner,
             player: None,
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.owner.key(),
+        components.insert(reference.owner.key(), SerializedComponent { 
             max_size: ComponentOwner::get_max_size(),
             data: owner
         });
@@ -223,8 +217,7 @@ pub mod dominarisystems {
         let active = ComponentActive {
             active: true
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.active.key(),
+        components.insert(reference.active.key(), SerializedComponent { 
             max_size: ComponentActive::get_max_size(),
             data: active
         });
@@ -260,7 +253,7 @@ pub mod dominarisystems {
         ctx.accounts.instance_index.features.push(entity_id);
 
         // Modify the Tile Entity with the new Feature
-        let tile_feature_component = ctx.accounts.tile_entity.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.feature.key()).unwrap();
+        let tile_feature_component = ctx.accounts.tile_entity.components.get(&reference.feature).unwrap();
         let mut tile_feature:ComponentFeature = ComponentFeature::try_from_slice(&tile_feature_component.data.as_slice()).unwrap();
         tile_feature.feature_id = Some(entity_id);
         let data = tile_feature.try_to_vec().unwrap();
@@ -278,7 +271,7 @@ pub mod dominarisystems {
             },
             signer_seeds
         );
-        dominariworld::cpi::req_modify_component(modify_tile_ctx, vec![ctx.accounts.system_signer.components.feature.key()], vec![data])?;
+        dominariworld::cpi::req_modify_component(modify_tile_ctx, vec![reference.feature.key()], vec![data])?;
         Ok(())
     }
 
@@ -303,6 +296,7 @@ pub mod dominarisystems {
     }
 
     pub fn system_init_player(ctx:Context<SystemInitPlayer>, entity_id: u64, name:String, image: String ) -> Result <()> {
+        let reference = &ctx.accounts.system_signer.components;
         // Optional: Fail if too many players already in the instance
         if ctx.accounts.instance_index.config.max_players == ctx.accounts.instance_index.players.len() as u16 {
             return err!(DominariError::PlayerCountExceeded)
@@ -314,15 +308,14 @@ pub mod dominarisystems {
 
         // Create Player Entity
         // Player has: Metadata and Player Stats
-        let mut components = vec![];
+        let mut components: BTreeMap<Pubkey, SerializedComponent> = BTreeMap::new();
         // Feature has Metadata, Location, Owner, Active, and ..Blueprint Components
         let metadata_component = ComponentMetadata {
             name: ctx.accounts.payer.key().to_string(),
             entity_type: EntityType::Player,
             world_instance: ctx.accounts.world_instance.key(),
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.metadata.key(), 
+        components.insert(reference.metadata.key(), SerializedComponent { 
             max_size: ComponentMetadata::get_max_size(), 
             data:  metadata_component
         });
@@ -336,8 +329,7 @@ pub mod dominarisystems {
             // Give them Starting Card
             cards: ctx.accounts.instance_index.config.starting_cards.clone()
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent { 
-            component_key: ctx.accounts.system_signer.components.player_stats.key(), 
+        components.insert(reference.player_stats.key(), SerializedComponent { 
             max_size: ComponentPlayerStats::get_max_size(), 
             data:  player_stats_component
         });
@@ -373,54 +365,32 @@ pub mod dominarisystems {
 
     /**
      * Can only be called by a player that's in the game
-     * Starts the game if players.len() == max_players by setting Map.play_phase to Play
      */
     pub fn change_game_state(ctx:Context<ChangeGameState>, game_state: PlayPhase) -> Result<()> {
-        if game_state != PlayPhase::Paused || game_state != PlayPhase::Play {
-            return err!(DominariError::InvalidPlayPhase)
-        }
-
         if !ctx.accounts.instance_index.players.contains(&ctx.accounts.player.entity_id) {
             return err!(DominariError::InvalidPlayer)
         }
 
-        let tile_feature_component = ctx.accounts.map.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.mapmeta.key()).unwrap();
-        let mut mapmeta = ComponentMapMeta::try_from_slice(&tile_feature_component.data.as_slice()).unwrap();
-        mapmeta.play_phase = game_state;
-        let data = mapmeta.try_to_vec().unwrap();
-
-        let system_signer_seeds:&[&[u8]] = &[
-            b"System_Signer",
-            &[*ctx.bumps.get("system_signer").unwrap()]
-        ];
-        let signer_seeds = &[system_signer_seeds];
-        let modify_map_ctx = CpiContext::new_with_signer(
-            ctx.accounts.world_program.to_account_info(),
-            dominariworld::cpi::accounts::ModifyComponent {
-                world_config: ctx.accounts.world_config.to_account_info(),
-                entity: ctx.accounts.map.to_account_info(),
-                system: ctx.accounts.system_signer.to_account_info(),
-                system_registration: ctx.accounts.system_registration.to_account_info(),
-                universe: ctx.accounts.universe.to_account_info(),
-            },
-            signer_seeds
-        );
-        dominariworld::cpi::req_modify_component(modify_map_ctx, vec![ctx.accounts.system_signer.components.mapmeta.key()], vec![data])?;
-
+        ctx.accounts.instance_index.play_phase = game_state;
         Ok(())
     }
 
     pub fn spawn_unit(ctx:Context<SpawnUnit>, unit_id: u64) -> Result<()> {
+        let reference = &ctx.accounts.system_signer.components;
+        // Check if the game is paused
+        if ctx.accounts.instance_index.play_phase != PlayPhase::Play {
+            return err!(DominariError::GamePaused)
+        }
 
         // Check player belongs to payer
-        let player_stats_component = ctx.accounts.player.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.player_stats.key()).unwrap();
+        let player_stats_component = ctx.accounts.player.components.get(&reference.player_stats).unwrap();
         let mut player_stats = ComponentPlayerStats::try_from_slice(&player_stats_component.data.as_slice()).unwrap();
         if player_stats.key.key() != ctx.accounts.payer.key() {
             return err!(ComponentErrors::InvalidOwner)
         }
 
         // Check that the Tile is Empty
-        let tile_occupant_component = ctx.accounts.tile.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.occupant.key()).unwrap();
+        let tile_occupant_component = ctx.accounts.tile.components.get(&reference.occupant).unwrap();
         let mut tile_occupant = ComponentOccupant::try_from_slice(&tile_occupant_component.data.as_slice()).unwrap();
         if tile_occupant.occupant_id.is_some() {
             return err!(ComponentErrors::TileOccupied)
@@ -437,7 +407,7 @@ pub mod dominarisystems {
         player_stats.cards.swap_remove(card_idx.unwrap());
 
         // Create Unit Entity
-        let mut components: Vec<SerializedComponent> = vec![];
+        let mut components: BTreeMap<Pubkey, SerializedComponent> = BTreeMap::new();
         // Add Metadata, Owner, Location, Active + Blueprint components
         let metadata_component = ComponentMetadata {
             name: ctx.accounts.unit_blueprint.name.clone(),
@@ -445,8 +415,7 @@ pub mod dominarisystems {
             world_instance: ctx.accounts.world_instance.key()
 
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent {
-            component_key: ctx.accounts.system_signer.components.metadata.key(),
+        components.insert(reference.metadata.key(), SerializedComponent {
             max_size: ComponentMetadata::get_max_size(),
             data: metadata_component
         });
@@ -454,23 +423,22 @@ pub mod dominarisystems {
             owner: Some(ctx.accounts.payer.key()),
             player: Some(ctx.accounts.player.entity_id)
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent {
-            component_key: ctx.accounts.system_signer.components.owner.key(),
+        components.insert(reference.owner.key(), SerializedComponent {
             max_size: ComponentOwner::get_max_size(),
             data: owner_component
         });
         let active_component = ComponentActive {
             active: true
         }.try_to_vec().unwrap();
-        components.push(SerializedComponent{
-            component_key: ctx.accounts.system_signer.components.active.key(),
+        components.insert(reference.active.key(), SerializedComponent{
             max_size: ComponentActive::get_max_size(),
             data: active_component
         });
 
         // Clone the Tile's location component to the Unit
-        components.push(
-            ctx.accounts.tile.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.location.key()).unwrap().clone()
+        components.insert(
+            reference.location.key(),
+            ctx.accounts.tile.components.get(&reference.location).unwrap().clone()
         );
         
         components.extend(ctx.accounts.unit_blueprint.components.clone());
@@ -541,31 +509,36 @@ pub mod dominarisystems {
         Ok(())
     }
 
-
     pub fn move_unit(ctx:Context<MoveUnit>) -> Result<()> {
+        let reference = &ctx.accounts.system_signer.components;
+        // Check if the game is paused
+        if ctx.accounts.instance_index.play_phase != PlayPhase::Play {
+            return err!(DominariError::GamePaused)
+        }
+
         // From.Occupant must be Unit
-        let from_occupant_component = ctx.accounts.from.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.occupant.key()).unwrap();
+        let from_occupant_component = ctx.accounts.from.components.get(&reference.occupant).unwrap();
         let mut from_occupant = ComponentOccupant::try_from_slice(&from_occupant_component.data.as_slice()).unwrap();
         if from_occupant.occupant_id.unwrap() != ctx.accounts.unit.entity_id {
             return err!(ComponentErrors::InvalidUnit)
         }
         
         // Unit must be active
-        let active_component = ctx.accounts.unit.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.active.key()).unwrap();
+        let active_component = ctx.accounts.unit.components.get(&reference.active).unwrap();
         let active = ComponentActive::try_from_slice(&active_component.data.as_slice()).unwrap();
         if active.active == false {
             return err!(ComponentErrors::UnitDead)
         }
 
         // To.Occupant must be Empty
-        let to_occupant_component = ctx.accounts.to.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.occupant.key()).unwrap();
+        let to_occupant_component = ctx.accounts.to.components.get(&reference.occupant).unwrap();
         let mut to_occupant = ComponentOccupant::try_from_slice(&to_occupant_component.data.as_slice()).unwrap();
         if to_occupant.occupant_id.is_some() {
             return err!(ComponentErrors::TileOccupied)
         }
 
         // Unit must be Owned by Player        
-        let unit_owner_component = ctx.accounts.unit.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.owner.key()).unwrap();
+        let unit_owner_component = ctx.accounts.unit.components.get(&reference.owner).unwrap();
         let unit_owner = ComponentOwner::try_from_slice(&unit_owner_component.data.as_slice()).unwrap();
         if unit_owner.owner.unwrap() != ctx.accounts.payer.key() {
             return err!(ComponentErrors::InvalidOwner)
@@ -573,21 +546,21 @@ pub mod dominarisystems {
         
         // Unit must be recovered from last used
         let clock = Clock::get().unwrap();
-        let unit_last_used_component = ctx.accounts.unit.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.last_used.key()).unwrap();
+        let unit_last_used_component = ctx.accounts.unit.components.get(&reference.last_used).unwrap();
         let mut unit_last_used = ComponentLastUsed::try_from_slice(&unit_last_used_component.data.as_slice()).unwrap();
         if unit_last_used.last_used != 0 && (unit_last_used.last_used + unit_last_used.recovery) >= clock.slot {
             return err!(ComponentErrors::UnitRecovering)
         }
 
         // Distance between From and To must be < Unit's Movement
-        let from_location_c = ctx.accounts.from.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.location.key()).unwrap();
+        let from_location_c = ctx.accounts.from.components.get(&reference.location).unwrap();
         let from_location = ComponentLocation::try_from_slice(&from_location_c.data.as_slice()).unwrap();
 
-        let to_location_c = ctx.accounts.to.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.location.key()).unwrap();
+        let to_location_c = ctx.accounts.to.components.get(&reference.location).unwrap();
         let to_location = ComponentLocation::try_from_slice(&to_location_c.data.as_slice()).unwrap();
         
         let distance:f64 = (((to_location.x as f64 - from_location.x as f64).powf(2_f64) + (to_location.y as f64 - from_location.y as f64).powf(2_f64)) as f64).sqrt();
-        let unit_range_component = ctx.accounts.unit.components.iter().find(|&comp| comp.component_key == ctx.accounts.system_signer.components.range.key()).unwrap();
+        let unit_range_component = ctx.accounts.unit.components.get(&reference.range).unwrap();
         let unit_range = ComponentRange::try_from_slice(&unit_range_component.data.as_slice()).unwrap();
         if unit_range.movement < distance as u64 {
             return err!(ComponentErrors::UnitLacksMovement)
@@ -668,51 +641,56 @@ pub mod dominarisystems {
         let defender = &ctx.accounts.defender;
         let reference = &ctx.accounts.system_signer.components;
 
+        // Check if the game is paused
+        if ctx.accounts.instance_index.play_phase != PlayPhase::Play {
+            return err!(DominariError::GamePaused)
+        }
+        
         // Check that attacker is owned by Payer
-        let attacker_owner_c = attacker.components.iter().find(|&comp| comp.component_key == reference.owner.key()).unwrap();
+        let attacker_owner_c = attacker.components.get(&reference.owner).unwrap();
         let attacker_owner = ComponentOwner::try_from_slice(&attacker_owner_c.data.as_slice()).unwrap();
         if attacker_owner.owner != Some(ctx.accounts.payer.key()) {
             return err!(ComponentErrors::InvalidOwner)
         }
         
         // Check that attacker is active
-        let attacker_active_c = attacker.components.iter().find(|&comp| comp.component_key == reference.active.key()).unwrap();
+        let attacker_active_c = attacker.components.get(&reference.active).unwrap();
         let attacker_active = ComponentActive::try_from_slice(&attacker_active_c.data.as_slice()).unwrap();
         if attacker_active.active == false {
             return err!(ComponentErrors::UnitDead)
         }
 
         // Check that defender is NOT owned by Payer
-        let defender_owner_c = defender.components.iter().find(|&comp| comp.component_key == reference.owner.key()).unwrap();
+        let defender_owner_c = defender.components.get(&reference.owner).unwrap();
         let defender_owner = ComponentOwner::try_from_slice(&defender_owner_c.data.as_slice()).unwrap();
         if defender_owner.player == attacker_owner.player {
             return err!(ComponentErrors::FriendlyFire)
         }
 
         // Check attacker has damage component
-        let attacker_damage_c = attacker.components.iter().find(|&comp| comp.component_key == reference.damage.key()).unwrap();
+        let attacker_damage_c = attacker.components.get(&reference.damage).unwrap();
         let attacker_damage = ComponentDamage::try_from_slice(&attacker_damage_c.data.as_slice()).unwrap();
 
         // Check defender is active and has health component
-        let defender_active_c = defender.components.iter().find(|&comp| comp.component_key == reference.active.key()).unwrap();
+        let defender_active_c = defender.components.get(&reference.active).unwrap();
         let mut defender_active = ComponentActive::try_from_slice(&defender_active_c.data.as_slice()).unwrap();
         if defender_active.active == false {
             return err!(ComponentErrors::UnitDead)
         }
-        let defender_health_c = defender.components.iter().find(|&comp| comp.component_key == reference.health.key());
+        let defender_health_c = defender.components.get(&reference.health);
         if defender_health_c.is_none() {
             return err!(ComponentErrors::NoHealthComponent)
         }
         let mut defender_health = ComponentHealth::try_from_slice(&defender_health_c.unwrap().data.as_slice()).unwrap();
 
         // Defender must be in Range of Attacker
-        let attacker_location_c = attacker.components.iter().find(|&comp| comp.component_key == reference.location.key()).unwrap();
+        let attacker_location_c = attacker.components.get(&reference.location).unwrap();
         let attacker_location = ComponentLocation::try_from_slice(&attacker_location_c.data.as_slice()).unwrap();
-        let defender_location_c = defender.components.iter().find(|&comp| comp.component_key == reference.location.key()).unwrap();
+        let defender_location_c = defender.components.get(&reference.location).unwrap();
         let defender_location = ComponentLocation::try_from_slice(&defender_location_c.data.as_slice()).unwrap();
         
         let distance:f64 = (((defender_location.x as f64 - attacker_location.x as f64).powf(2_f64) + (defender_location.y as f64 - attacker_location.y as f64 ).powf(2_f64)) as f64).sqrt();
-        let attacker_range_c = attacker.components.iter().find(|&comp| comp.component_key == reference.range.key()).unwrap();
+        let attacker_range_c = attacker.components.get(&reference.range).unwrap();
         let attacker_range = ComponentRange::try_from_slice(&attacker_range_c.data.as_slice()).unwrap();
         if distance as u64 > attacker_range.attack_range {
             return err!(ComponentErrors::OutOfRange)
@@ -720,7 +698,7 @@ pub mod dominarisystems {
 
         // Check attacker last used isn't violated
         let clock = Clock::get().unwrap();
-        let attacker_last_used_c = attacker.components.iter().find(|&comp| comp.component_key == reference.last_used.key()).unwrap();
+        let attacker_last_used_c = attacker.components.get(&reference.last_used).unwrap();
         let mut attacker_last_used = ComponentLastUsed::try_from_slice(&attacker_last_used_c.data.as_slice()).unwrap();
         if attacker_last_used.last_used != 0 && (attacker_last_used.last_used + attacker_last_used.recovery) >= clock.slot {
             return err!(ComponentErrors::UnitRecovering)
@@ -756,13 +734,13 @@ pub mod dominarisystems {
         let mut dmg = get_random_u64(attacker_damage.max_damage); 
         
         // check if defender is Feature, if not, look for it's TroopClass
-        let defender_metadata_c = defender.components.iter().find(|&comp| comp.component_key == reference.metadata.key() ).unwrap();
+        let defender_metadata_c = defender.components.get(&reference.metadata).unwrap();
         let defender_metadata = ComponentMetadata::try_from_slice(&defender_metadata_c.data.as_slice()).unwrap();
 
         if defender_metadata.entity_type == EntityType::Feature {
             dmg += attacker_damage.bonus_feature as u64;
         } else {
-            let defender_troop_class_c = defender.components.iter().find(|&comp| comp.component_key == reference.troop_class.key()).unwrap();
+            let defender_troop_class_c = defender.components.get(&reference.troop_class).unwrap();
             let defender_troop_class = ComponentTroopClass::try_from_slice(&defender_troop_class_c.data.as_slice()).unwrap();
             match defender_troop_class.class {
                 TroopClass::Aircraft => dmg += attacker_damage.bonus_aircraft as u64,
@@ -782,14 +760,14 @@ pub mod dominarisystems {
             // Modify the defending tile to remove the defender
             let defending_tile = &ctx.accounts.defending_tile;
             // Require Defender Location and Defending Tile Location are the same
-            let defending_tile_loc_c = defending_tile.components.iter().find(|&comp| comp.component_key == reference.location.key()).unwrap();
+            let defending_tile_loc_c = defending_tile.components.get(&reference.location).unwrap();
             let defending_tile_loc = ComponentLocation::try_from_slice(&defending_tile_loc_c.data.as_slice()).unwrap();
             if defending_tile_loc.x != defender_location.x && defending_tile_loc.y != defender_location.y {
                 return err!(ComponentErrors::InvalidLocation)
             }
 
             if defender_metadata.entity_type == EntityType::Feature {
-                let tile_feature_c = defending_tile.components.iter().find(|&comp| comp.component_key == reference.feature.key()).unwrap();
+                let tile_feature_c = defending_tile.components.get(&reference.feature).unwrap();
                 let mut tile_feature = ComponentFeature::try_from_slice(&tile_feature_c.data.as_slice()).unwrap();
                 tile_feature.feature_id = None;
                 let modify_tile_ctx = CpiContext::new_with_signer(
@@ -810,7 +788,7 @@ pub mod dominarisystems {
                         tile_feature.try_to_vec().unwrap(),
                     ])?;
             } else {
-                let tile_occupant_c = defending_tile.components.iter().find(|&comp| comp.component_key == reference.occupant.key()).unwrap();
+                let tile_occupant_c = defending_tile.components.get(&reference.occupant).unwrap();
                 let mut tile_occupant = ComponentOccupant::try_from_slice(&tile_occupant_c.data.as_slice()).unwrap();
                 tile_occupant.occupant_id = None;
                 let modify_tile_ctx = CpiContext::new_with_signer(

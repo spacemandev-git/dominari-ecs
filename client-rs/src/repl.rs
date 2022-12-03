@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::sync::mpsc::channel;
-use anchor_client::{solana_sdk::commitment_config::CommitmentConfig, Cluster, EventContext};
+use anchor_client::{solana_sdk::{commitment_config::CommitmentConfig, compute_budget::ComputeBudgetInstruction}, Cluster, EventContext};
 use dominari::gamestate::GameState;
 use prettytable::{Table, Cell};
 use std::sync::Arc;
@@ -321,20 +321,22 @@ pub async fn attack_tile(client: &Client, state: &GameState, from_x: u8, from_y:
     let attacker = state.get_entity_occupant(&from_tile.0).unwrap().occupant_id.unwrap();
     let defender = state.get_entity_occupant(&to_tile.0).unwrap().occupant_id.unwrap();
 
+    let mut atk_ix = client.dominari.attack_tile(
+        client.id01.pubkey(),
+        state.instance,
+        attacker,
+        defender,
+        to_tile.0
+    );
+    atk_ix.insert(0, ComputeBudgetInstruction::set_compute_unit_limit(400_000));
 
     let mut atk_tile_tx = Transaction::new_with_payer(
-        client.dominari.attack_tile(
-            client.id01.pubkey(),
-            state.instance,
-            attacker,
-            defender,
-            to_tile.0
-        ).as_slice(),
+        atk_ix.as_slice(),
         Some(&client.id01.pubkey())
     );
     atk_tile_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
-    //client.rpc.send_and_confirm_transaction(&atk_tile_tx).await.unwrap();
-    send_tx_skip_preflight(atk_tile_tx);
+    client.rpc.send_and_confirm_transaction(&atk_tile_tx).await.unwrap();
+    //send_tx_skip_preflight(atk_tile_tx);
 }
 
 pub async fn spawn(client: &Client, state: &GameState, player_id:u64, x:u8, y:u8, card: &String) {
@@ -345,18 +347,24 @@ pub async fn spawn(client: &Client, state: &GameState, player_id:u64, x:u8, y:u8
 
     if occupant.is_none() {
         // SPAWN UNIT
+        let compute_buget_ix = ComputeBudgetInstruction::set_compute_unit_limit(400_000);
+        let mut spawn_ix = client.dominari.spawn_unit(
+            client.id01.pubkey(),
+            state.instance,
+            player_id,
+            tile.0,
+            state.blueprints.get_blueprint_by_name(card).unwrap()
+        );
+
+        spawn_ix.insert(0, compute_buget_ix); 
+
         let mut spawn_unit_tx = Transaction::new_with_payer(
-            client.dominari.spawn_unit(
-                client.id01.pubkey(),
-                state.instance,
-                player_id,
-                tile.0,
-                state.blueprints.get_blueprint_by_name(card).unwrap()
-            ).as_slice(),
+            &spawn_ix.as_slice(),
             Some(&client.id01.pubkey())
         );
         spawn_unit_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
         client.rpc.send_and_confirm_transaction(&spawn_unit_tx).await.unwrap();
+        //send_tx_skip_preflight(spawn_unit_tx);
     } else {
         // Check if unit belongs to the player_id
         // If it does, play the modify_unit tx

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-
+use std::collections::BTreeMap;
 use anchor_lang::{prelude::*, InstructionData};
 use anchor_lang::system_program::ID as system_program;
 use dominarisystems::state::RelevantComponentKeys;
@@ -278,7 +278,7 @@ impl Dominari {
         ], &dominarisystems::id()).0
     }
 
-    pub async fn register_blueprint(&self,payer:Pubkey, name: String, components: Vec<SerializedComponent>) -> Vec<Instruction> {
+    pub async fn register_blueprint(&self,payer:Pubkey, name: String, components: BTreeMap<Pubkey, SerializedComponent>) -> Vec<Instruction> {
         let system_signer = self.get_system_signer();
         
         let blueprint = Dominari::get_blueprint_key(&name);
@@ -360,7 +360,7 @@ impl Dominari {
 
     }
 
-    pub fn change_game_state(&self, payer: Pubkey, instance: u64, player_id: u64, game_state: dominarisystems::component::PlayPhase) -> Vec<Instruction> {
+    pub fn change_game_state(&self, payer: Pubkey, instance: u64, player_id: u64, game_state: dominarisystems::account::PlayPhase) -> Vec<Instruction> {
         let world_program = self.world;
         let system_signer = self.get_system_signer();
         let world_config = Pubkey::find_program_address(&[
@@ -527,6 +527,11 @@ impl Dominari {
             world_instance.as_ref()
         ], &ecs::id()).0;
 
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ], &dominarisystems::id()).0;
+
         vec![Instruction {
             program_id: dominarisystems::id(),
             accounts: dominarisystems::accounts::MoveUnit {
@@ -543,7 +548,8 @@ impl Dominari {
 
                 from,
                 to,
-                unit
+                unit,
+                instance_index
             }.to_account_metas(Some(true)),
             data: dominarisystems::instruction::MoveUnit {}.data()
         }]
@@ -589,6 +595,11 @@ impl Dominari {
             world_instance.as_ref()
         ], &ecs::id()).0;
 
+        let instance_index = Pubkey::find_program_address(&[
+            b"Instance_Index",
+            world_instance.key().as_ref()
+        ], &dominarisystems::id()).0;
+
         vec![Instruction {
             program_id: dominarisystems::id(),
             accounts: dominarisystems::accounts::AttackTile {
@@ -606,6 +617,7 @@ impl Dominari {
                 attacker,
                 defender,
                 defending_tile,
+                instance_index
             }.to_account_metas(Some(true)),
             data: dominarisystems::instruction::AttackTile {}.data()
         }]
@@ -773,6 +785,7 @@ impl Blueprint {
 
 }
 
+pub use dominarisystems::account::PlayPhase;
 pub use dominarisystems::component::*;
 pub use dominarisystems::state::*;
 pub use dominarisystems::event::*;

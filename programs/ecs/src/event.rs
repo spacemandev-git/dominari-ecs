@@ -19,17 +19,17 @@ pub struct NewEntityMinted{
 #[event]
 pub struct NewComponentAdded{
     pub entity: Pubkey,
-    pub components: Vec<SerializedComponent>
+    pub components: Vec<(Pubkey,SerializedComponent)>
 }
 
 #[event]
 pub struct ComponentRemoved{
     pub entity: Pubkey,
-    pub component: SerializedComponent
+    pub component: Vec<Pubkey>
 }
 
 #[event]
 pub struct ComponentModified{
     pub entity: Pubkey,
-    pub component: Pubkey
+    pub components: Vec<Pubkey>
 }
