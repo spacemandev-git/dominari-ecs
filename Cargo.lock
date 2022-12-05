@@ -1194,6 +1194,7 @@ dependencies = [
  "solana-client-wasm",
  "solana-sdk",
  "toml",
+ "wasm-bindgen",
 ]
 
 [[package]]
