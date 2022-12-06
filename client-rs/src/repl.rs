@@ -10,7 +10,7 @@ use crate::*;
 
 pub async fn game_repl(client: &mut Client, instance: u64) {
     // Build Gamestate
-    client.dominari.build_gamestate(instance).await;
+    client.dominari.build_gamestate(&client.rpc, instance).await;
     // Grab all blueprints from various folders
     let mut blueprint_names: Vec<String> = vec![];
     let blueprint_paths = vec!["blueprints/features", "blueprints/mods", "blueprints/units"];

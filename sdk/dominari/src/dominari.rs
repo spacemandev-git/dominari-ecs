@@ -4,25 +4,22 @@ use anchor_lang::{prelude::*, InstructionData};
 use anchor_lang::system_program::ID as system_program;
 use dominarisystems::state::RelevantComponentKeys;
 use ecs::state::SerializedComponent;
-use serde::Deserialize;
 use solana_client_wasm::WasmClient;
 use solana_sdk::instruction::Instruction;
 use rand::Rng;
 use crate::gamestate::GameState;
 use crate::universe::Universe;
+use serde::Deserialize;
 
 #[derive(Clone)]
 pub struct Dominari {
-    pub client: WasmClient,
     pub world: Pubkey,
     pub state: HashMap<u64, GameState>, //maps instanceID to GameState Object
 }
 
-
 impl Dominari {
-    pub fn new(rpc: &str, world: Pubkey) -> Self {
+    pub fn new(world: Pubkey) -> Self {
         return Dominari {
-            client: WasmClient::new(rpc),
             world,
             state: HashMap::new(),
         }
@@ -623,8 +620,8 @@ impl Dominari {
         }]
     }
 
-    pub async fn build_gamestate(&mut self, instance:u64) -> &GameState {
-        self.state.insert(instance, GameState::new(self.client.clone(), self.world, instance));
+    pub async fn build_gamestate(&mut self, client: &WasmClient, instance:u64) -> &GameState {
+        self.state.insert(instance, GameState::new(client.clone(), self.world, instance));
         self.get_mut_gamestate(instance).load_state().await;
         self.get_gamestate(instance)
     }

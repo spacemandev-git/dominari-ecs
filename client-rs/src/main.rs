@@ -24,9 +24,9 @@ async fn main() {
     let mut client: Client = Client {
         id01: read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).unwrap(),
         rpc: WasmClient::new_with_commitment(RPC_URL, CommitmentConfig::confirmed()),
-        universe: Universe::new(RPC_URL),
+        universe: Universe::new(),
         world: World::new(RPC_URL, dominari::world::World::get_default_program_id()),
-        dominari: Dominari::new(RPC_URL, dominari::world::World::get_default_program_id()),
+        dominari: Dominari::new(dominari::world::World::get_default_program_id()),
     };
 
     let args: Vec<String> = env::args().collect();
@@ -65,7 +65,7 @@ async fn main() {
         },
         "index" => {
             let instance = args.get(2).unwrap().parse::<u64>().unwrap();
-            client.dominari.build_gamestate(instance).await;
+            client.dominari.build_gamestate(&client.rpc, instance).await;
             println!("Index {:?}", &client.dominari.get_gamestate(instance).index.as_ref());
         },
         "game" => {
@@ -401,7 +401,7 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
     }
 
     // Reloads the state after map and tiles are initalized
-    client.dominari.build_gamestate(instance).await;
+    client.dominari.build_gamestate(&client.rpc, instance).await;
 
     // Init the Features
     println!("Initializing features...");

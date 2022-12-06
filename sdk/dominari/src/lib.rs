@@ -7,9 +7,6 @@ pub mod gamestate;
 // Export Solana Client so no need to reimport it
 pub use solana_client_wasm::solana_sdk;
 
-use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
-pub fn greet() -> String {
-    "Hello Wasm!".to_string()
-}
+#[cfg(feature="wasm")]
+pub mod wasm;
