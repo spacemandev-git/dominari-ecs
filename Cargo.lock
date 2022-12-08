@@ -1185,6 +1185,7 @@ dependencies = [
  "anchor-lang",
  "bimap",
  "borsh",
+ "console_error_panic_hook",
  "dominarisystems",
  "dominariworld",
  "ecs",

@@ -1,9 +1,14 @@
 import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
-import * as wasm from 'dominari';
+//import * as wasm from 'dominari';
 
 export default function Home() {
+  /*
+  let instance = new wasm.GameInstance("H5mieGWWK6qukHoNzbR6ysLxReeQC4JHZcNM6JkPQnm3");
+  console.log(instance.get_world_key());
+  console.log(wasm.greet());
+  */
   return (
     <div className={styles.container}>
       <Head>
