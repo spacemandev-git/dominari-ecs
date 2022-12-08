@@ -24,9 +24,9 @@ async fn main() {
     let mut client: Client = Client {
         id01: read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).unwrap(),
         rpc: WasmClient::new_with_commitment(RPC_URL, CommitmentConfig::confirmed()),
-        universe: Universe::new(RPC_URL),
+        universe: Universe::new(),
         world: World::new(RPC_URL, dominari::world::World::get_default_program_id()),
-        dominari: Dominari::new(RPC_URL, dominari::world::World::get_default_program_id()),
+        dominari: Dominari::new(dominari::world::World::get_default_program_id()),
     };
 
     let args: Vec<String> = env::args().collect();
@@ -65,10 +65,12 @@ async fn main() {
         },
         "index" => {
             let instance = args.get(2).unwrap().parse::<u64>().unwrap();
-            client.dominari.build_gamestate(instance).await;
+            client.dominari.build_gamestate(&client.rpc, instance).await;
             println!("Index {:?}", &client.dominari.get_gamestate(instance).index.as_ref());
         },
         "game" => {
+            println!("{}", client.id01.pubkey().to_string());
+            println!("{}", client.id01.to_base58_string());
             let instance = args.get(2).unwrap().parse::<u64>().unwrap();
             println!("Game Repl starting....");
             game_repl(&mut client, instance).await;
@@ -123,7 +125,7 @@ pub async fn register_system_for_component(client: &Client, instance:u64) {
     // Create System Registration for a given Instance
     println!("Registering Dominari system for instance {}...", instance);
     let mut system_register_tx = Transaction::new_with_payer(
-        client.world.register_system(client.dominari.get_system_signer(), instance, client.id01.pubkey()).await.as_slice(),
+        client.world.register_system(Dominari::get_system_signer(), instance, client.id01.pubkey()).await.as_slice(),
         Some(&client.id01.pubkey())
     );
     system_register_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
@@ -132,7 +134,7 @@ pub async fn register_system_for_component(client: &Client, instance:u64) {
     // Register Components for given system registration
     println!("Adding components to Dominari registration...", );
     let mut add_comp_tx = Transaction::new_with_payer(
-        client.world.add_components_to_system_registration(ComponentSchema::new(&client.world.pubkey).get_all_component_keys(), client.dominari.get_system_signer(), instance, client.id01.pubkey()).await.as_slice(),
+        client.world.add_components_to_system_registration(ComponentSchema::new(&client.world.pubkey).get_all_component_keys(), Dominari::get_system_signer(), instance, client.id01.pubkey()).await.as_slice(),
         Some(&client.id01.pubkey())
     );
     add_comp_tx.sign(&[&client.id01], client.rpc.get_latest_blockhash().await.unwrap());
@@ -401,7 +403,7 @@ pub async fn map(client: &mut Client, instance:u64, map: MapConfig) {
     }
 
     // Reloads the state after map and tiles are initalized
-    client.dominari.build_gamestate(instance).await;
+    client.dominari.build_gamestate(&client.rpc, instance).await;
 
     // Init the Features
     println!("Initializing features...");

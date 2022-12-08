@@ -4,25 +4,22 @@ use anchor_lang::{prelude::*, InstructionData};
 use anchor_lang::system_program::ID as system_program;
 use dominarisystems::state::RelevantComponentKeys;
 use ecs::state::SerializedComponent;
-use serde::Deserialize;
 use solana_client_wasm::WasmClient;
 use solana_sdk::instruction::Instruction;
 use rand::Rng;
 use crate::gamestate::GameState;
 use crate::universe::Universe;
+use serde::Deserialize;
 
 #[derive(Clone)]
 pub struct Dominari {
-    pub client: WasmClient,
     pub world: Pubkey,
     pub state: HashMap<u64, GameState>, //maps instanceID to GameState Object
 }
 
-
 impl Dominari {
-    pub fn new(rpc: &str, world: Pubkey) -> Self {
+    pub fn new(world: Pubkey) -> Self {
         return Dominari {
-            client: WasmClient::new(rpc),
             world,
             state: HashMap::new(),
         }
@@ -32,7 +29,7 @@ impl Dominari {
         return dominarisystems::id();
     }
 
-    pub fn get_system_signer(&self) -> Pubkey {
+    pub fn get_system_signer() -> Pubkey {
         Pubkey::find_program_address(&[b"System_Signer"], &dominarisystems::id()).0
     }
 
@@ -44,7 +41,7 @@ impl Dominari {
             accounts: dominarisystems::accounts::Initialize {
                 payer,
                 system_program,
-                system_signer: self.get_system_signer()
+                system_signer: Dominari::get_system_signer()
             }.to_account_metas(None),
             data: dominarisystems::instruction::Initialize {
                 component_keys,
@@ -54,7 +51,7 @@ impl Dominari {
 
     pub fn init_map(&self, payer:Pubkey, instance:u64, max_x:u8, max_y:u8) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0;
@@ -70,7 +67,7 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            self.get_system_signer().as_ref()
+            Dominari::get_system_signer().as_ref()
         ], &world_program).0;
 
         let mut rng = rand::thread_rng();
@@ -111,7 +108,7 @@ impl Dominari {
 
     pub fn init_game(&self, payer:Pubkey, instance: u64, config: dominarisystems::state::GameConfig) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0;
@@ -156,7 +153,7 @@ impl Dominari {
 
     pub fn init_tile(&self, payer:Pubkey, instance:u64, x:u8, y:u8, cost:u64) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0;
@@ -172,7 +169,7 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            self.get_system_signer().as_ref()
+            Dominari::get_system_signer().as_ref()
         ], &world_program).0;
 
         let mut rng = rand::thread_rng();
@@ -214,7 +211,7 @@ impl Dominari {
 
     pub fn init_feature(&self, payer:Pubkey, instance:u64, tile_id:u64 ,  blueprint: Pubkey) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0;
@@ -230,7 +227,7 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            self.get_system_signer().as_ref()
+            Dominari::get_system_signer().as_ref()
         ], &world_program).0;
 
         let mut rng = rand::thread_rng();
@@ -279,7 +276,7 @@ impl Dominari {
     }
 
     pub async fn register_blueprint(&self,payer:Pubkey, name: String, components: BTreeMap<Pubkey, SerializedComponent>) -> Vec<Instruction> {
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         
         let blueprint = Dominari::get_blueprint_key(&name);
         println!("Registering Blueprint {} at Key {}", name, blueprint);
@@ -301,7 +298,7 @@ impl Dominari {
 
     pub fn init_player(&self, payer:Pubkey, instance: u64, name: String, image: String) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0; 
@@ -317,7 +314,7 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            self.get_system_signer().as_ref()
+            Dominari::get_system_signer().as_ref()
         ], &world_program).0;
 
         let mut rng = rand::thread_rng();
@@ -362,7 +359,7 @@ impl Dominari {
 
     pub fn change_game_state(&self, payer: Pubkey, instance: u64, player_id: u64, game_state: dominarisystems::account::PlayPhase) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0;
@@ -378,7 +375,7 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            self.get_system_signer().as_ref()
+            Dominari::get_system_signer().as_ref()
         ], &world_program).0;
 
         let instance_index = Pubkey::find_program_address(&[
@@ -413,7 +410,7 @@ impl Dominari {
     // Spawn Unit
     pub fn spawn_unit(&self, payer:Pubkey, instance:u64, player_id: u64, tile_id:u64, unit_blueprint: Pubkey) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0; 
@@ -429,7 +426,7 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            self.get_system_signer().as_ref()
+            Dominari::get_system_signer().as_ref()
         ], &world_program).0;
 
         let mut rng = rand::thread_rng();
@@ -488,7 +485,7 @@ impl Dominari {
     // Move Unit
     pub fn move_unit(&self, payer: Pubkey, instance: u64, from_tile_id: u64, to_tile_id: u64) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0; 
@@ -504,7 +501,7 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            self.get_system_signer().as_ref()
+            Dominari::get_system_signer().as_ref()
         ], &world_program).0;
 
         let unit_id = &self.get_gamestate(instance).get_unit_on_tile(from_tile_id).0;
@@ -558,7 +555,7 @@ impl Dominari {
     // Attack Unit
     pub fn attack_tile(&self, payer: Pubkey, instance: u64, attacker_id: u64, defender_id: u64, defending_tile_id: u64) -> Vec<Instruction> {
         let world_program = self.world;
-        let system_signer = self.get_system_signer();
+        let system_signer = Dominari::get_system_signer();
         let world_config = Pubkey::find_program_address(&[
             b"world_signer".as_ref(),
         ], &world_program).0; 
@@ -574,7 +571,7 @@ impl Dominari {
         let system_registration = Pubkey::find_program_address(&[
             b"System_Registration",
             world_instance.to_bytes().as_ref(),
-            self.get_system_signer().as_ref()
+            Dominari::get_system_signer().as_ref()
         ], &world_program).0;
 
         let attacker = Pubkey::find_program_address(&[
@@ -623,8 +620,8 @@ impl Dominari {
         }]
     }
 
-    pub async fn build_gamestate(&mut self, instance:u64) -> &GameState {
-        self.state.insert(instance, GameState::new(self.client.clone(), self.world, instance));
+    pub async fn build_gamestate(&mut self, client: &WasmClient, instance:u64) -> &GameState {
+        self.state.insert(instance, GameState::new(client.clone(), self.world, instance));
         self.get_mut_gamestate(instance).load_state().await;
         self.get_gamestate(instance)
     }

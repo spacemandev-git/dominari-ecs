@@ -25,6 +25,7 @@ pub struct Blueprint {
  * Init during Init Map
  * Then realloc+ on entity spawn
  */
+#[cfg_attr(feature = "sdk", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug)]
 #[account]
 pub struct InstanceIndex {

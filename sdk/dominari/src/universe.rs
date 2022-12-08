@@ -1,15 +1,9 @@
 use anchor_lang::prelude::Pubkey;
-use solana_client_wasm::WasmClient;
-
-pub struct Universe {
-    pub client: WasmClient
-}
+pub struct Universe {}
 
 impl Universe {
-    pub fn new(rpc: &str) -> Self {
-        return Universe {
-            client: WasmClient::new(rpc)
-        }
+    pub fn new() -> Self {
+        return Universe { }
     }
 
     pub fn get_keys_from_id(world_instance: Pubkey, ids: Vec<u64>) -> Vec<Pubkey> {
