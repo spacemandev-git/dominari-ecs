@@ -1,14 +1,14 @@
-import Head from 'next/head';
+/* import Head from 'next/head';
 import * as dominari from 'dominari';
 import { useEffect } from 'react';
 import * as anchor from '@project-serum/anchor';
 import {decode} from 'bs58';
 
-export default function Game() {
+export default function Debug() {
     const rpc = "http://64.227.14.242:8899"
     const world = "H5mieGWWK6qukHoNzbR6ysLxReeQC4JHZcNM6JkPQnm3";
     const instance = BigInt(1); 
-    const gameInstance = new dominari.GameInstance(rpc, world, BigInt(instance));
+    const gameInstance = dominari.GameInstance.new(rpc, world, BigInt(instance));
     // Apollo Testing Keypair
     console.log("KEY: ", process.env.NEXT_PUBLIC_KEY);
     const keypair = anchor.web3.Keypair.fromSecretKey(decode(process.env.NEXT_PUBLIC_KEY as string));
@@ -72,4 +72,4 @@ export default function Game() {
     return (
         <div></div>
     )
-}
+} */

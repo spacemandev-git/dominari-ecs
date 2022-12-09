@@ -1,9 +1,10 @@
 use std::{str::FromStr, collections::HashMap};
 
 use anchor_lang::prelude::Pubkey;
+use ecs::account::WorldInstance;
 use solana_client_wasm::WasmClient;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
-use crate::dominari::Dominari;
+use crate::{dominari::Dominari, util::fetch_account};
 use wasm_bindgen::prelude::*;
 extern crate console_error_panic_hook;
 
@@ -24,13 +25,24 @@ pub struct GameInstance {
 
 #[wasm_bindgen]
 impl GameInstance {
-    #[wasm_bindgen(constructor)]
-    pub fn new(rpc:String, world: String, instance:u64) -> Self {
+    #[wasm_bindgen]
+    pub async fn new(rpc:String, world: String, instance:u64) -> Self {
         console_error_panic_hook::set_once();
+        let client = WasmClient::new(&rpc);
+
+        // Check if Instance is an actual game!
+        let instance_pubkey = Pubkey::find_program_address(&[
+            b"World",
+            Pubkey::from_str(world.as_str()).unwrap().to_bytes().as_ref(),
+            instance.to_be_bytes().as_slice(),
+        ], &ecs::id()).0;
+
+        // Should panic if the game instance isn't found
+        let _instance_acc:WorldInstance = fetch_account(&client, &instance_pubkey).await.unwrap_throw();
 
         GameInstance {
             instance,
-            rpc: WasmClient::new(&rpc.as_str()),
+            rpc: client,
             action_bundle: Dominari {
                 world: Pubkey::from_str(world.as_str()).unwrap(),
                 state: HashMap::new()

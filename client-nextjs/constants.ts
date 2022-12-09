@@ -1,0 +1,1 @@
+export const WORLD_KEY = "H5mieGWWK6qukHoNzbR6ysLxReeQC4JHZcNM6JkPQnm3";
