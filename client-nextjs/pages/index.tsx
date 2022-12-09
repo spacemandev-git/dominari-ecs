@@ -10,6 +10,7 @@ import {
 import { clusterApiUrl } from '@solana/web3.js';
 import styles from '../styles/Index.module.css'
 import Game from '../components/Game';
+import * as dominari from 'dominari';
 
 // Default styles that can be overridden by your app
 require('@solana/wallet-adapter-react-ui/styles.css');
@@ -40,6 +41,7 @@ export const DominariContext = createContext({} as any);
 
 export default function Wallet() {
     const [network, setNetwork] = useState("http://64.227.14.242:8899");
+    const [instance, setInstance] = useState({} as dominari.GameInstance);
 
     const wallets = useMemo(
         () => [
@@ -70,7 +72,9 @@ export default function Wallet() {
                 <WalletModalProvider>
                 <DominariContext.Provider 
                     value={{
-                        network
+                        network,
+                        instance,
+                        setInstance
                     }}
                 >
                     <div className={styles.container}>

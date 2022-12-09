@@ -1,3 +1,9 @@
 .gameContainer{
     padding: 5rem;
+    display: grid;
+    grid-template-rows: 1fr 9fr;
+}
+
+.handContainer{
+    display: grid;
 }

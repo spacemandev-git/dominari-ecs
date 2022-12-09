@@ -7,13 +7,15 @@ import { WORLD_KEY } from "../constants";
 export default function Game(){
     const gameIDRef = useRef<HTMLInputElement>(null);
     const [isGame, setIsGame] = useState(false);
-    const [instance, setInstance] = useState({} as dominari.GameInstance);
-    const {network} = useContext(DominariContext);
+    const {network, instance, setInstance} = useContext(DominariContext);
 
     const tryJoinGame = () => {
         console.log(`Trying to connect to Game ID ${gameIDRef.current?.value} @ World ${WORLD_KEY} on RPC ${network}`);
         dominari.GameInstance.new(network, WORLD_KEY, BigInt(gameIDRef.current?.value as string))
-        .then((gameInstance) => {
+        .then(async (gameInstance) => {
+            let blueprintNames = await (await fetch('blueprints.json')).json()
+            await gameInstance.build_game_state()
+            await gameInstance.load_blueprints(blueprintNames);
             setInstance(gameInstance)
             setIsGame(true);
         })
@@ -36,7 +38,7 @@ export default function Game(){
     } else {
         return(
             <div className={styles.gameContainer}>
-                
+                <h1>Hello</h1> 
             </div>
         )
     }
@@ -45,9 +47,17 @@ export default function Game(){
 
 function Hand(){
     return(
-    <div>
+        <div className={styles.handContainer}>
 
-    </div>
+        </div>
+    )
+}
+
+function Card(){
+    return(
+        <div>
+
+        </div>
     )
 }
 

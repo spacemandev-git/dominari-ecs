@@ -54,8 +54,8 @@ impl GameInstance {
         self.action_bundle.world.to_string()
     }
 
-    pub async fn build_game_state(&mut self, instance: u64) {
-        self.action_bundle.build_gamestate(&self.rpc, instance).await;
+    pub async fn build_game_state(&mut self) {
+        self.action_bundle.build_gamestate(&self.rpc, self.instance).await;
     }
 
     pub async fn load_blueprints(&mut self, names: JsValue) {
